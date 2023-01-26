@@ -1,6 +1,9 @@
 # API key file
 *.key
 
+# REST API sqlite cahche file
+*.sqlite
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
