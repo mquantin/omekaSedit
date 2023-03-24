@@ -9,7 +9,14 @@ from omeka_s_tools.api import OmekaAPIClient
 with open("APIkey.key", 'r') as stream:
     apiKey = yaml.safe_load(stream)
 
-omeka = OmekaAPIClient('https://epotec.univ-nantes.fr/api', 
+import os
+import requests
+session = requests.Session()
+session.verify = False
+session.trust_env = False
+os.environ['CURL_CA_BUNDLE']="" # or whaever other is interfering with 
+
+omeka = OmekaAPIClient('http://epotec.univ-nantes.fr/api', 
                        key_identity=apiKey['identity'], 
                        key_credential=apiKey['credential']
                        )
@@ -24,23 +31,36 @@ omeka = OmekaAPIClient('https://epotec.univ-nantes.fr/api',
 
 items = omeka.search_items('Baccarat ')
 
-print(items['total_results'])
+print("nombre d'item trouvés:",items['total_results'])
 
+moveDataFromProp = 'crm:P5_consists_of'
+moveDataToProp = 'crm:P45_consists_of'
 
-def moveProp():
-    for origItem in items['results']:
+def moveDataProp(itemsToChange, fromProp, toProp, delFrom = False):
+    for origItem in itemsToChange['results']:
         #print what we're talking about
-        if 'crm:P5_consists_of' in origItem:
+        if fromProp in origItem:
             new_item = deepcopy(origItem)
-            print(new_item['crm:P5_consists_of'])
-            new_item['crm:P45_consists_of'] = []
-            prepare_property_value(value, property_id)
-            for index, material in enumerate(new_item['crm:P5_consists_of']):
-                print(material)
-                new_item['crm:P45_consists_of'] += {'type': 'uri', '@id': material['@id'], 'o:label': material['o:label']}
-            #del new_item['crm:P5_consists_of']
-            updated_item = omeka.update_resource(new_item, 'items')
+            new_item[toProp] = []
+            for propValue in new_item[fromProp]:
+                print(propValue)
+                if propValue['type'] == 'uri':
+                    new_item[toProp] += {'type': 'uri', 'id': propValue['@id'], 'o:label': propValue['o:label']}
+                elif propValue['type'] == 'literal':
+                    new_item[toProp] += {'type': 'literal', 'value': propValue['@value']}
+                else:
+                    raise ValueError("property value is unclear", propValue)
+            if 'o:resource_template' in new_item:
+                templateId = new_item['o:resource_template']['o:id']
+                newItemPayload = omeka.prepare_item_payload_using_template(new_item, templateId)
+            else:
+                newItemPayload = omeka.prepare_item_payload(new_item)
+            print('here')
+            updated_item = omeka.update_resource(newItemPayload, 'items')
             assert origItem['o:id'] == updated_item['o:id']
+            if delFrom:
+                del new_item[moveDataFromProp]
+
 
 
 def updateThumbnail():
@@ -60,4 +80,4 @@ def updateThumbnail():
         # The id of the original and upated items should be the same
         assert origItem['o:id'] == updated_item['o:id']
     
-moveProp()
+moveDataProp(items, moveDataFromProp, moveDataToProp, delFrom = False)
