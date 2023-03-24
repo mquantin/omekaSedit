@@ -64,7 +64,7 @@ omeka = OmekaAPIClient('https://172.26.70.170/api',
 # # search items by property value
 # items = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_value='', filter_type='in')
 with no_ssl_verification():
-    items = omeka.search_items('materialmatthieu')
+    items = omeka.search_items('')
 
 print("nombre d'item trouvés:",items['total_results'])
 
@@ -77,19 +77,26 @@ def moveDataProp(itemsToChange, fromProp, toProp, delFrom = False):
         if fromProp in origItem:
             print('processing item n°',origItem['o:id'])
             new_item = deepcopy(origItem)
-            toPropValues = new_item.setdefault(toProp, [])
+            # managing existing values in target prop
+            toPropValues = new_item.setdefault(toProp, [])#the key of the toProp is totally abitrary, useless
+            existingIds = []
+            existingIds += [value['@id'] for value in toPropValues if '@id' in value]
+            existingIds += [value['@value'] for value in toPropValues if '@value' in value]
             toProp_id = omeka.get_property_id(toProp)
-            for propValue in new_item[fromProp]:
-                if propValue['type'] == 'uri':
-                    prop_value = {'value': propValue['@id'], 'type': 'uri', 'label': propValue['o:label']}
-                    formatted_prop = omeka.prepare_property_value(prop_value, toProp_id)
-                    toPropValues += [formatted_prop,]#the key of the toProp is totally abitrary, useless
-                elif propValue['type'] == 'literal':
-                    prop_value = {'value': propValue['@value'], 'type': 'literal'}
-                    formatted_prop = omeka.prepare_property_value(prop_value, toProp_id)
-                    toPropValues += [formatted_prop,]#the key of the toProp is totally abitrary, useless
+            for origPropValue in new_item[fromProp]:
+                if origPropValue['type'] == 'uri':
+                    checking = '@id'
+                    newPropvalue = {'value': origPropValue['@id'], 'type': 'uri', 'label': origPropValue['o:label']}
+                elif origPropValue['type'] == 'literal':
+                    checking = '@value'
+                    newPropvalue = {'value': origPropValue['@value'], 'type': 'literal'}
                 else:
                     raise ValueError("property value is unclear", propValue)
+                if origPropValue[checking] in existingIds:
+                    print('skiped ', origPropValue[checking], ' to avoid duplicate' )
+                    continue
+                formatted_newProp = omeka.prepare_property_value(newPropvalue, toProp_id)
+                toPropValues += [formatted_newProp,]
             # if new_item['o:resource_template']:
             #     templateId = new_item['o:resource_template']['o:id']
             #     newItemPayload = omeka.prepare_item_payload_using_template(new_item, templateId)
@@ -120,4 +127,4 @@ def updateThumbnail():
         assert origItem['o:id'] == updated_item['o:id']
 
 with no_ssl_verification():
-    moveDataProp(items, moveDataFromProp, moveDataToProp, delFrom = False)
+    moveDataProp(items, moveDataFromProp, moveDataToProp, delFrom = True)
