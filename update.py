@@ -9,12 +9,6 @@ from omeka_s_tools.api import OmekaAPIClient
 with open("APIkey.key", 'r') as stream:
     apiKey = yaml.safe_load(stream)
 
-import os
-import requests
-session = requests.Session()
-session.verify = False
-session.trust_env = False
-os.environ['CURL_CA_BUNDLE']="" # or whaever other is interfering with 
 
 omeka = OmekaAPIClient('http://epotec.univ-nantes.fr/api', 
                        key_identity=apiKey['identity'], 
