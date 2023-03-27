@@ -97,17 +97,15 @@ def moveDataProp(itemsToChange, fromProp, toProp, delFrom = False):
                     continue
                 formatted_newProp = omeka.prepare_property_value(newPropvalue, toProp_id)
                 toPropValues += [formatted_newProp,]
-            # if new_item['o:resource_template']:
-            #     templateId = new_item['o:resource_template']['o:id']
-            #     newItemPayload = omeka.prepare_item_payload_using_template(new_item, templateId)
-            # else:
-            #     newItemPayload = omeka.prepare_item_payload(new_item)
             if delFrom:
                 del new_item[moveDataFromProp]
             updated_item = omeka.update_resource(new_item, 'items')
             assert origItem['o:id'] == updated_item['o:id']
 
-
+def check(itemsToCheck):
+    for item in itemsToCheck['results']:
+        if len(item.get('dcterms:description', []))>1:
+            print(item['o:id'])
 
 def updateThumbnail():
     for origItem in items['results']:
@@ -127,4 +125,4 @@ def updateThumbnail():
         assert origItem['o:id'] == updated_item['o:id']
 
 with no_ssl_verification():
-    moveDataProp(items, moveDataFromProp, moveDataToProp, delFrom = True)
+    check(items)
