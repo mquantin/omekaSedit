@@ -64,7 +64,7 @@ omeka = OmekaAPIClient('https://172.26.70.170/api',
 # # search items by property value
 # items = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_value='', filter_type='in')
 with no_ssl_verification():
-    items = omeka.search_items('')
+    items = omeka.search_items('', page=6)
 
 print("nombre d'item trouvés:",items['total_results'])
 
@@ -72,6 +72,7 @@ moveDataFromProp = 'crm:P5_consists_of'
 moveDataToProp = 'crm:P45_consists_of'
 
 def moveDataProp(itemsToChange, fromProp, toProp, delFrom = False):
+    print(len(itemsToChange['results']))
     for origItem in itemsToChange['results']:
         #print what we're talking about
         if fromProp in origItem:
@@ -83,11 +84,14 @@ def moveDataProp(itemsToChange, fromProp, toProp, delFrom = False):
             existingIds += [value['@id'] for value in toPropValues if '@id' in value]
             existingIds += [value['@value'] for value in toPropValues if '@value' in value]
             toProp_id = omeka.get_property_id(toProp)
+            processedValuesCount = 0
             for origPropValue in new_item[fromProp]:
                 if origPropValue['type'] == 'uri':
+                    processedValuesCount += 1
                     checking = '@id'
                     newPropvalue = {'value': origPropValue['@id'], 'type': 'uri', 'label': origPropValue['o:label']}
                 elif origPropValue['type'] == 'literal':
+                    processedValuesCount += 1
                     checking = '@value'
                     newPropvalue = {'value': origPropValue['@value'], 'type': 'literal'}
                 else:
@@ -97,8 +101,10 @@ def moveDataProp(itemsToChange, fromProp, toProp, delFrom = False):
                     continue
                 formatted_newProp = omeka.prepare_property_value(newPropvalue, toProp_id)
                 toPropValues += [formatted_newProp,]
+            print('processed ', processedValuesCount, ' values')
             if delFrom:
-                del new_item[moveDataFromProp]
+                del new_item[fromProp]
+                print('deleteing values of ', fromProp )
             updated_item = omeka.update_resource(new_item, 'items')
             assert origItem['o:id'] == updated_item['o:id']
 
@@ -125,4 +131,4 @@ def updateThumbnail():
         assert origItem['o:id'] == updated_item['o:id']
 
 with no_ssl_verification():
-    check(items)
+    moveDataProp(items, moveDataFromProp, moveDataToProp, delFrom = True)
