@@ -5,46 +5,6 @@ from copy import deepcopy
 import yaml
 from omeka_s_tools.api import OmekaAPIClient
 
-# #### no SSL script
-# import warnings
-# import contextlib
-
-# import requests
-# from urllib3.exceptions import InsecureRequestWarning
-
-# old_merge_environment_settings = requests.Session.merge_environment_settings
-
-# @contextlib.contextmanager
-# def no_ssl_verification():
-#     opened_adapters = set()
-
-#     def merge_environment_settings(self, url, proxies, stream, verify, cert):
-#         # Verification happens only once per connection so we need to close
-#         # all the opened adapters once we're done. Otherwise, the effects of
-#         # verify=False persist beyond the end of this context manager.
-#         opened_adapters.add(self.get_adapter(url))
-
-#         settings = old_merge_environment_settings(self, url, proxies, stream, verify, cert)
-#         settings['verify'] = False
-
-#         return settings
-
-#     requests.Session.merge_environment_settings = merge_environment_settings
-
-#     try:
-#         with warnings.catch_warnings():
-#             warnings.simplefilter('ignore', InsecureRequestWarning)
-#             yield
-#     finally:
-#         requests.Session.merge_environment_settings = old_merge_environment_settings
-
-#         for adapter in opened_adapters:
-#             try:
-#                 adapter.close()
-#             except:
-#                 pass
-# ####
-
 
 #read credential API as a yaml file
 with open("APIkey.key", 'r') as stream:
@@ -56,23 +16,31 @@ omeka = OmekaAPIClient('https://epotec.univ-nantes.fr/api',
                        key_credential=apiKey['credential']
                        )
 
-# basic search
-# APIitems = omeka.search_items('', page=6)
-
-# # search items by class
-# APIitems = omeka.search_items(None, resource_class_id=omeka.get_property_id('crm:E21_Person'), )
-
-# # search items by property value
-# APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_value='', filter_type='in')
-
-# # search items by property exists
-# APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_type='ex')
 
 
-# with no_ssl_verification():
-APIitems = omeka.search_items('', item_set_id = '210', page=1)
+def getItemsinPage(pageNum=1):
+    # basic search
+    # APIitems = omeka.search_items('', page=6)
 
-print("nombre d'item trouvés: ", APIitems['total_results'])
+    # # search items by class
+    # APIitems = omeka.search_items(None, resource_class_id=omeka.get_property_id('crm:E21_Person'), )
+
+    # # search items by property value
+    # APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_value='', filter_type='in')
+
+    # # search items by property exists
+    # APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_type='ex')
+
+    APIitems = omeka.search_items('', item_set_id = '210', page=pageNum)
+    if APIitems['results']:
+        # a améliorer car la dernière page fausse la valeur de pageQ
+        pagesQ = int(APIitems['total_results']/len(APIitems['results']))+1
+        print(f"nombre d'item total: {APIitems['total_results']}, page: {pageNum}/{pagesQ}")
+    else:
+        print(f"pas d'autres items")
+    return APIitems
+
+
 
 moveDataFromProp = 'crm:P5_consists_of'
 moveDataToProp = 'crm:P45_consists_of'
@@ -150,5 +118,14 @@ def changeClass(items, classFrom, classTo):
         elif origItemClass['o:id'] == classF['o:id']:
             print("  this item class should be updated", origItem['o:id'])
 
+pageNum=0
+search = True
+while search:
+    pageNum+=1
+    APIitems = getItemsinPage(pageNum)
+    search = len(APIitems['results'])#0 quand il n'y a plus rien 
+    if search:
+        changeClass(APIitems, 'crm:E31_Document', 'crm:E22_Human-Made_Object')
 
-changeClass(APIitems, 'crm:E31_Document', 'crm:E22_Human-Made_Object')
+# a voir comment éviter de re-query l'api pour retrouver les class ou les propriétés à chaque page
+# positionner le fetch au bon endroit.
