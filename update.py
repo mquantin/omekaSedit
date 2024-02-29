@@ -35,31 +35,31 @@ def getItemsinPage(pageNum=1):
     if APIitems['results']:
         # a améliorer car la dernière page fausse la valeur de pageQ
         pagesQ = int(APIitems['total_results']/len(APIitems['results']))+1
-        print(f"nombre d'item total: {APIitems['total_results']}, page: {pageNum}/{pagesQ}")
+        print(f"\n\nnombre d'item total: {APIitems['total_results']}, page: {pageNum}/{pagesQ}")
     else:
         print(f"pas d'autres items")
     return APIitems
 
 
 
-moveDataFromProp = 'crm:P5_consists_of'
-moveDataToProp = 'crm:P45_consists_of'
-
-def moveDataProp(items, fromProp, toProp, delFrom = False):
+def moveDataProp(items, propFrom, propTo, delFrom = False):
+    """
+    propFrom and propTo are string like  'crm:P5_consists_of' and 'crm:P45_consists_of'
+    """
     print(len(items['results']))
     for origItem in items['results']:
         #print what we're talking about
-        if fromProp in origItem:
-            print('processing item n°',origItem['o:id'])
+        if propFrom in origItem:
+            print('processing item id n°',origItem['o:id'])
             new_item = deepcopy(origItem)
             # managing existing values in target prop
-            toPropValues = new_item.setdefault(toProp, [])#the key of the toProp is totally abitrary, useless
+            propToValues = new_item.setdefault(propTo, [])#the key of the propTo is totally abitrary, useless
             existingIds = []
-            existingIds += [value['@id'] for value in toPropValues if '@id' in value]
-            existingIds += [value['@value'] for value in toPropValues if '@value' in value]
-            toProp_id = omeka.get_property_id(toProp)
+            existingIds += [value['@id'] for value in propToValues if '@id' in value]
+            existingIds += [value['@value'] for value in propToValues if '@value' in value]
+            propTo_id = omeka.get_property_id(propTo)
             processedValuesCount = 0
-            for origPropValue in new_item[fromProp]:
+            for origPropValue in new_item[propFrom]:
                 if origPropValue['type'] == 'uri':
                     processedValuesCount += 1
                     checking = '@id'
@@ -69,23 +69,34 @@ def moveDataProp(items, fromProp, toProp, delFrom = False):
                     checking = '@value'
                     newPropvalue = {'value': origPropValue['@value'], 'type': 'literal'}
                 else:
-                    raise ValueError("property value is unclear", origPropValue)
+                    raise ValueError("property value is unclear, nor uri, nor litteral", origPropValue)
                 if origPropValue[checking] in existingIds:
                     print('skiped ', origPropValue[checking], ' to avoid duplicate' )
                     continue
-                formatted_newProp = omeka.prepare_property_value(newPropvalue, toProp_id)
-                toPropValues += [formatted_newProp,]
+                formatted_newProp = omeka.prepare_property_value(newPropvalue, propTo_id)
+                propToValues += [formatted_newProp,]
             print('processed ', processedValuesCount, ' values')
             if delFrom:
-                del new_item[fromProp]
-                print('deleteing values of ', fromProp )
+                del new_item[propFrom]
+                print('deleteing values of ', propFrom )
             updated_item = omeka.update_resource(new_item, 'items')
             assert origItem['o:id'] == updated_item['o:id']
 
-def check(items):
+def checkProperty(items):
     for item in items['results']:
         if len(item.get('dcterms:description', []))>1:
             print(item['o:id'])
+
+def checkClasses(items):
+    allclasses = {}
+    for item in items['results']:
+        itemClass = item.get('o:resource_class')
+        if itemClass:
+            itemClassID = itemClass['o:id']
+        else:
+            itemClassID = 'noClass'
+        allclasses.setdefault(itemClassID,[]).append(item['o:id'])
+    return allclasses
 
 def updateThumbnail(items):
     for origItem in items['results']:
@@ -104,28 +115,88 @@ def updateThumbnail(items):
         # The id of the original and upated items should be the same
         assert origItem['o:id'] == updated_item['o:id']
 
-def changeClass(items, classFrom, classTo):
+def updateClass(items, classFrom, classTo, templateTo, templateFrom = None):
     """
+    change class and resource template
     classFrom and classTo are string like  crm:E36_Visual_Item
+    templateTo and templateFom are label of template like 'mobilier'
+    templateFrom is optional and restrict the provenance.
     """
     classF = omeka.get_resource_by_term(classFrom, resource_type='resource_classes')
     classT = omeka.get_resource_by_term(classTo, resource_type='resource_classes')
-    print(f"  class from term: {classF['o:term']} \t\tid: {classF['o:id']} \n  class to term: {classT['o:term']} \tid: {classT['o:id']}")
+    templateT = omeka.get_template_by_label(templateTo)
+    if templateFrom:
+        templateF = omeka.get_template_by_label(templateFrom)
+        print(f"      template from label: {templateFrom} \tid: {templateF['o:id']}")
+    print(f"""  
+        template to label: {templateTo} \tid: {templateT['o:id']}
+        class from term: {classF['o:term']} \t\tid: {classF['o:id']}
+        class to term: {classT['o:term']} \tid: {classT['o:id']}
+        """)
+    processed = []
+    not_proc = []
+    error = []
     for origItem in items['results']:
         origItemClass = origItem.get('o:resource_class')
         if not origItemClass:
-            print("  this item has no class:", origItem['o:id'])
+            print("  ERROR this item has no class (skipped):", origItem['o:id'])
+            error += [origItem['o:id']]
         elif origItemClass['o:id'] == classF['o:id']:
-            print("  this item class should be updated", origItem['o:id'])
+            template = origItem.get('o:resource_template')
+            if not template:
+                print("  ERROR this item has no template (skipped):", origItem['o:id'])
+                error += [origItem['o:id']]
+            elif templateFrom and template['o:id'] != templateF['o:id']:
+                print(f"  ERROR this item uses a different template (skipped): {origItem['o:id']}; template id {template['o:id']}")
+                error += [origItem['o:id']]
+            else:
+                print(f"processing item id n°{origItem['o:id']} classe: {classFrom} template: {template['o:id']}")
+                # 'o:resource_template': {'@id': 'https://epotec.univ-nantes.fr/api/resource_templates/3', 'o:id': 3}
+                new_item = deepcopy(origItem)
+                new_item['o:resource_class'] = {
+                    '@id': classT['@id'],
+                    'o:id':classT['o:id']
+                }
+                new_item['o:resource_template'] = {
+                    '@id': templateT['@id'],
+                    'o:id':templateT['o:id']
+                }
+                #updated_item = omeka.update_resource(new_item, 'items')
+                processed += [origItem['o:id']]
+                #assert origItem['o:id'] == updated_item['o:id']
+                # break
+        else: 
+            not_proc += [origItem['o:id']]
+    return processed, not_proc, error
+
 
 pageNum=0
 search = True
+processedItemsId = []
+not_procItemsId = []
+errorItemsId = []
+allClasses = {}
 while search:
     pageNum+=1
     APIitems = getItemsinPage(pageNum)
     search = len(APIitems['results'])#0 quand il n'y a plus rien 
     if search:
-        changeClass(APIitems, 'crm:E31_Document', 'crm:E22_Human-Made_Object')
+        seenClasses = checkClasses(APIitems)
+        for key, values in seenClasses.items():
+            allClasses.setdefault(key, []).extend(values)
+        processed, not_proc, error = updateClass(APIitems, 'crm:E36_Visual_Item', 'crm:E22_Human-Made_Object', 'mobilier')
+        processedItemsId += processed
+        not_procItemsId += not_proc
+        errorItemsId += error
+print("\n\n###################### Classes")
+for classID, itemsID in allClasses.items():
+    classTerm = omeka.get_resource_by_id(classID, resource_type='resource_classes')['o:term']
+    print(f"class id: {classID}\nclass term: {classTerm}\nconcerned item count: {len(itemsID)}")
+    print("id of concerned items :", itemsID)
+    print("\n")
 
-# a voir comment éviter de re-query l'api pour retrouver les class ou les propriétés à chaque page
-# positionner le fetch au bon endroit.
+print("\n\n###################### Mutations")
+print(f"processed: {len(processedItemsId)} \tskipped (error): {len(errorItemsId)} \tnot processed: {len(not_procItemsId)}")
+print(f"processed items ids: {processedItemsId}")
+print(f"error (skiped) items ids: {errorItemsId}")
+#print(f"not processed items ids: {not_procItemsId}")
