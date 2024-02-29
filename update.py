@@ -11,7 +11,7 @@ with open("APIkey.key", 'r') as stream:
     apiKey = yaml.safe_load(stream)
 
 
-omeka = OmekaAPIClient('https://epotec.univ-nantes.fr/api', 
+omeka = OmekaAPIClient('http://localhost/omeka-s/api/', 
                        key_identity=apiKey['identity'], 
                        key_credential=apiKey['credential']
                        )
@@ -30,6 +30,10 @@ def getItemsinPage(pageNum=1):
 
     # # search items by property exists
     # APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_type='ex')
+
+    #TODO search by item set label not id. 
+    itemSetID = omeka.get_resource_by_term('CCI item set', resource_type='item_sets')
+    print(itemSetID)
 
     APIitems = omeka.search_items('', item_set_id = '210', page=pageNum)
     if APIitems['results']:
@@ -83,9 +87,20 @@ def moveDataProp(items, propFrom, propTo, delFrom = False):
             assert origItem['o:id'] == updated_item['o:id']
 
 def checkProperty(items):
+    NoDesc = 0
+    OneDesc = 0
+    MoreDesc = 0
     for item in items['results']:
-        if len(item.get('dcterms:description', []))>1:
-            print(item['o:id'])
+        match len(item.get('dcterms:description', [])):
+            case 0:
+                NoDesc += 1
+            case 1:
+                OneDesc += 1
+            case _:
+                MoreDesc += 1
+                #print(item['o:id'])
+    print(f"  0 descirption: {NoDesc} items\n  1 description: {OneDesc} items\n >1 descriptions: {MoreDesc} items" )
+
 
 def checkClasses(items):
     allclasses = {}
