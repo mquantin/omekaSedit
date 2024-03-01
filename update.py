@@ -29,7 +29,7 @@ def getItemsinPage(pageNum=1):
     # APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_value='', filter_type='in')
 
     # # search items by property exists
-    # APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_type='ex')
+    # APIitems = omeka.filter_items_by_property(filter_property='crm:P2_has_type', filter_type='ex', item_set_id = itemSetId, page=pageNum)
 
     itemSets = omeka.get_resources('item_sets', search='CCI itemSet')
     if len(itemSets['results']) > 1 : 
@@ -136,12 +136,13 @@ def updateThumbnail(items):
         # The id of the original and upated items should be the same
         assert origItem['o:id'] == updated_item['o:id']
 
-def updateClass(items, classFrom, classTo, templateTo, templateFrom = None):
+def updateClass(items, classFrom, classTo, templateTo, templateFrom = None, addType = False):
     """
     change class and resource template
     classFrom and classTo are string like  crm:E36_Visual_Item
     templateTo and templateFom are label of template like 'mobilier'
     templateFrom is optional and restrict the provenance.
+    addType is optional. It add or create a crm:P2_has_type to keep memory of the class that war intially assigned.
     """
     classF = omeka.get_resource_by_term(classFrom, resource_type='resource_classes')
     classT = omeka.get_resource_by_term(classTo, resource_type='resource_classes')
@@ -181,6 +182,9 @@ def updateClass(items, classFrom, classTo, templateTo, templateFrom = None):
                     '@id': templateT['@id'],
                     'o:id':templateT['o:id']
                 }
+                newTypeProp = {'value': uriValue, 'type': 'uri', 'label': uriValue}
+                formatted_newTypeProp = omeka.prepare_property_value(newTypeProp, propTo_id)
+
                 #updated_item = omeka.update_resource(new_item, 'items')
                 processed += [origItem['o:id']]
                 #assert origItem['o:id'] == updated_item['o:id']
