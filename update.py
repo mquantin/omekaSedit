@@ -11,7 +11,7 @@ with open("APIkey.key", 'r') as stream:
     apiKey = yaml.safe_load(stream)
 
 
-omeka = OmekaAPIClient('http://localhost/omeka-s/api/', 
+omeka = OmekaAPIClient(apiKey['url'], 
                        key_identity=apiKey['identity'], 
                        key_credential=apiKey['credential']
                        )
@@ -31,11 +31,17 @@ def getItemsinPage(pageNum=1):
     # # search items by property exists
     # APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_type='ex')
 
-    #TODO search by item set label not id. 
-    itemSetID = omeka.get_resource_by_term('CCI item set', resource_type='item_sets')
-    print(itemSetID)
-
-    APIitems = omeka.search_items('', item_set_id = '210', page=pageNum)
+    itemSets = omeka.get_resources('item_sets', search='CCI itemSet')
+    if len(itemSets['results']) > 1 : 
+        print('item set search query unclear, multiple results:')
+        for itemSet in itemSets['results']:
+            print(f"id: {itemSet['o:id']}, title: {itemSet['o:title']}")
+        return
+    if len(itemSets['results']) == 0 : 
+        print('aucun item set trouvé')
+        return
+    itemSetId = itemSets['results'][0]['o:id']
+    APIitems = omeka.search_items('', item_set_id = itemSetId, page=pageNum)
     if APIitems['results']:
         # a améliorer car la dernière page fausse la valeur de pageQ
         pagesQ = int(APIitems['total_results']/len(APIitems['results']))+1
@@ -165,8 +171,7 @@ def updateClass(items, classFrom, classTo, templateTo, templateFrom = None):
                 print(f"  ERROR this item uses a different template (skipped): {origItem['o:id']}; template id {template['o:id']}")
                 error += [origItem['o:id']]
             else:
-                print(f"processing item id n°{origItem['o:id']} classe: {classFrom} template: {template['o:id']}")
-                # 'o:resource_template': {'@id': 'https://epotec.univ-nantes.fr/api/resource_templates/3', 'o:id': 3}
+                #  print(f"processing item id n°{origItem['o:id']} classe: {classFrom} template: {template['o:id']}")
                 new_item = deepcopy(origItem)
                 new_item['o:resource_class'] = {
                     '@id': classT['@id'],
@@ -203,6 +208,9 @@ while search:
         processedItemsId += processed
         not_procItemsId += not_proc
         errorItemsId += error
+
+
+
 print("\n\n###################### Classes")
 for classID, itemsID in allClasses.items():
     classTerm = omeka.get_resource_by_id(classID, resource_type='resource_classes')['o:term']
@@ -213,5 +221,6 @@ for classID, itemsID in allClasses.items():
 print("\n\n###################### Mutations")
 print(f"processed: {len(processedItemsId)} \tskipped (error): {len(errorItemsId)} \tnot processed: {len(not_procItemsId)}")
 print(f"processed items ids: {processedItemsId}")
-print(f"error (skiped) items ids: {errorItemsId}")
+if errorItemsId:
+    print(f"error (skiped) items ids: {errorItemsId}")
 #print(f"not processed items ids: {not_procItemsId}")
