@@ -30,7 +30,7 @@ allClasses = {}
 E55type = namedtuple('E55type', 'uri label')
 while search:
     pageNum+=1
-    APIitems = utils.getItemsinPage(omeka, pageNum)
+    APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
     search = len(APIitems['results'])#0 quand il n'y a plus rien 
     if search:
         seenClasses = utils.checkClasses(APIitems)

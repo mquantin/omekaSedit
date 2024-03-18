@@ -1,7 +1,7 @@
 #!python3
 # -*- coding: utf-8 -*-
 
-def getItemsinPage(omeka, pageNum=1):
+def getItemsinPage(omeka, pageNum=1, itemSetName=None):
     # basic search
     # APIitems = omeka.search_items('', page=6)
 
@@ -14,7 +14,7 @@ def getItemsinPage(omeka, pageNum=1):
     # # search items by property exists
     # APIitems = omeka.filter_items_by_property(filter_property='crm:P2_has_type', filter_type='ex', item_set_id = itemSetId, page=pageNum)
 
-    itemSets = omeka.get_resources('item_sets', search='CCI itemSet')
+    itemSets = omeka.get_resources('item_sets', search=itemSetName)
     if len(itemSets['results']) > 1 : 
         print('item set search query unclear, multiple results:')
         for itemSet in itemSets['results']:
