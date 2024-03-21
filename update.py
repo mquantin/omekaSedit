@@ -9,7 +9,7 @@ import utils
 from moveDataProp import moveDataProp
 from updateClass import updateClass
 from updateThumbnail import updateThumbnail
-
+from createEvents import createEvents
 
 
 
@@ -28,6 +28,19 @@ not_procItemsId = []
 errorItemsId = []
 allClasses = {}
 E55type = namedtuple('E55type', 'uri label')
+mapping = {
+        'triggerProp': 'dcterms:date',
+        'targetProp': 'crm:P4_has_time-span', 
+        'targetItemClass': 'crm:E65_Creation',
+        'linkProperty': 'crms:p1_has_conceived',
+        'action': 'hide',
+        'targetTemplate': 'creation',
+        'targetLabel': 'creation',
+        'targetItemSet': 'CCI itemSet'
+        }
+
+
+
 while search:
     pageNum+=1
     APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
@@ -37,7 +50,8 @@ while search:
         for key, values in seenClasses.items():
             allClasses.setdefault(key, []).extend(values)
         #processed, not_proc, error = updateClass(APIitems, 'crm:E31_Document', 'crm:E22_Human-Made_Object', templateTo = 'mobilier', E55Type = E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"))
-        processed, not_proc, error = moveDataProp(omeka, APIitems, "dcterms:type", propTo = 'crm:P2_has_type', delFrom = True)
+        #processed, not_proc, error = moveDataProp(omeka, APIitems, "dcterms:type", propTo = 'crm:P2_has_type', delFrom = True)
+        processed, not_proc, error = createEvents(omeka, APIitems, mapping)
         processedItemsId += processed
         not_procItemsId += not_proc
         errorItemsId += error
