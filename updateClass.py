@@ -54,8 +54,8 @@ def updateClass(omeka, items, classFrom, classTo, templateTo, templateFrom = Non
                     'o:id':templateT['o:id']
                 }
                 if E55Type:
-                    newPropValue = {'value': E55Type.uri, 'type': 'uri', 'label': E55Type.label}
-                    new_item = utils.add_to_prop(omeka, new_item, E55TypePropID, 'crm:P2_has_type', newPropValue)
+                    newPropValues = [{'value': E55Type.uri, 'type': 'uri', 'label': E55Type.label},]
+                    new_item = utils.add_to_prop(omeka, new_item, E55TypePropID, 'crm:P2_has_type', newPropValues)
                 updated_item = omeka.update_resource(new_item, 'items')
                 processed += [origItem['o:id']]
                 assert origItem['o:id'] == updated_item['o:id']

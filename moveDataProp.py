@@ -20,18 +20,19 @@ def moveDataProp(omeka, items, propFrom, propTo, delFrom = False):
         print('processing item id n°',origItem['o:id'])
         new_item = deepcopy(origItem)
         #catches the content to be copied for each occurence in the propFrom of the item (maybe several values for the same prop)
+        newPropvalues = []
         for origPropValue in new_item[propFrom]:
             origPropValueContent = None
             if origPropValue['type'] == 'uri':
                 origPropValueContent = origPropValue['@id']
-                newPropvalue = {'value': origPropValueContent, 'type': 'uri', 'label': origPropValue['o:label']}
+                newPropvalues += {'value': origPropValueContent, 'type': 'uri', 'label': origPropValue['o:label']}
             elif origPropValue['type'] == 'literal':
                 origPropValueContent = origPropValue['@value']
-                newPropvalue = {'value': origPropValueContent, 'type': 'literal'}
+                newPropvalues += {'value': origPropValueContent, 'type': 'literal'}
             else:
                 error.append(origItem['o:id']) 
                 raise ValueError("property value is unclear, nor uri, nor litteral", origPropValue)
-            new_item = utils.add_to_prop(omeka, new_item, propTo_id, propTo, newPropvalue)
+        new_item = utils.add_to_prop(omeka, new_item, propTo_id, propTo, newPropvalues)
         processed.append(origItem['o:id']) 
         if delFrom:
             del new_item[propFrom]

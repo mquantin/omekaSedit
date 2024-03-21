@@ -34,10 +34,12 @@ def getItemsinPage(omeka, pageNum=1, itemSetName=None):
     return APIitems
 
 
+def printskip(new_valueContent, item):
+    print(f"skiped {new_valueContent} in item {item['o:id']} because it would have written twice the same content (duplicate)")
 
-def add_to_prop(omeka, item, propID, propTerm, newValue):
+def add_to_prop(omeka, item, propID, propTerm, newValues):
     """
-     newValue is  {'value': uri or literal content, 'type': 'uri' ou 'literal', 'label': only for uri}
+     newValues is  a list of dict {'value': uri or literal content, 'type': 'uri' ou 'literal', 'label': only for uri}
      propID and propTerm are input so they are queried outside the loop (calling this function). 
     """
     #creating the prop key if not exists
@@ -48,13 +50,9 @@ def add_to_prop(omeka, item, propID, propTerm, newValue):
     existingValuesContent = []
     existingValuesContent += [value['@id'] for value in propValues if '@id' in value]#all the uri / internal omeka resources
     existingValuesContent += [value['@value'].strip() for value in propValues if '@value' in value]#all the litterals
-    # get the content of the value to be added
-    new_valueContent = newValue['value'].strip()
-    if new_valueContent in existingValuesContent:
-        print('skiped ', new_valueContent, ' because it would have written twice the same content (duplicate)' )
-        return item
-    formatted_newProp = omeka.prepare_property_value(newValue, propID)
-    propValues += [formatted_newProp,]
+    #format the contents and roughly checks if no duplicated 
+    formatted_newValues = [omeka.prepare_property_value(newValue, propID)  if (newValue['value'] not in existingValuesContent) else printskip(item,newValue['value']) for newValue in newValues]
+    propValues += formatted_newValues
     return item
 
 
