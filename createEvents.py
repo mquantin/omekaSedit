@@ -60,7 +60,7 @@ def createEvents(omeka, items, mapping):
         'targetProp': 'crm:P4_has_time-span', 
         'targetItemClass': 'crm:E65_Creation',
         'linkProperty': 'crms:p1_has_conceived',
-        'action': 'hide' or 'delete',
+        'action': 'hide' or 'delete' or '',
         'targetTemplate': 'creation',
         'targetLabel': 'creation',
         'targetItemSet': 'CCI itemSet'
@@ -96,9 +96,28 @@ def createEvents(omeka, items, mapping):
             new_item = omeka.prepare_item_payload_using_template(terms, targetTemplateId)#a new item
         else: 
             new_item = deepcopy(found)# edit existing item matching the criterias of serachMatch
-        newPropValue = startItem[mapping['triggerProp']]#{'value': E55Type.uri, 'type': 'uri', 'label': E55Type.label}
-        new_item = utils.add_to_prop(omeka, new_item, targetPropId, 'crm:P2_has_type', newPropValue)
-        updated_item = omeka.update_resource(new_item, 'items')
+        # newPropValues = [{'value': value.get(''), 'type': 'uri', 'label': E55Type.label} for value in startItem[mapping['triggerProp']]]
+        # newPropValues = [
+        #     {
+        #         'value': value['@value'].strip(), 
+        #         'type': 'uri', 
+        #         'label': value['@value'].strip()
+        #     } for value in startItem[mapping['triggerProp']] if '@id' in value]#all the uri / internal omeka resources
+        # newPropValues += [value['@value'].strip() for value in propValues if '@value' in value]#all the litterals
+
+        # new_item = utils.add_to_prop(omeka, new_item, targetPropId, mapping['targetProp'], newPropValue)
+        
+        # just copies the content of trigger prop into the target prop
+        new_itempropValues = new_item.setdefault(mapping['targetProp'], [])
+        new_itempropValues += [value for value in startItem[mapping['triggerProp']]]
+        # actions on startIitem properties
+        update_item = deepcopy(startItem)
+        if mapping['action'] == 'hide':
+            update_item = utils.hideValues(update_item, mapping['triggerProp'])
+        elif mapping['action'] == 'delete':
+            update_item = utils.removeValues()
+        omeka.update_resource(update_item, 'items')
+        omeka.update_resource(new_item, 'items')
         processed.append(startItem)
     return processed, not_proc, error
                     

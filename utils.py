@@ -33,6 +33,18 @@ def getItemsinPage(omeka, pageNum=1, itemSetName=None):
         print(f"pas d'autres items")
     return APIitems
 
+def hideValue(itemValue):
+    if 'is_public' in itemValue:
+        itemValue['is_public'] == 'false'
+    return itemValue
+
+def hideValues(item, propTerm): 
+    if propTerm not in item:
+        return item
+    for value in item[propTerm]:
+        value = hideValue(value)
+    return item
+
 
 def printskip(new_valueContent, item):
     print(f"skiped {new_valueContent} in item {item['o:id']} because it would have written twice the same content (duplicate)")
