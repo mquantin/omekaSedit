@@ -45,6 +45,21 @@ def hideValues(item, propTerm):
         value = hideValue(value)
     return item
 
+def removeValues(item, propTerm):
+    if propTerm not in item:
+        return item
+    del(item[propTerm])        
+    return item
+
+def printMutation(mutationWord, processedItemsId, not_procItemsId, errorItemsId):
+    print("\n\n###################### ", mutationWord)
+    print(f"processed: {len(processedItemsId)} \tskipped (error): {len(errorItemsId)} \tnot processed: {len(not_procItemsId)}")
+    print(f"processed items ids: {processedItemsId}")
+    if errorItemsId:
+        print(f"error (skiped) items ids: {errorItemsId}")
+    #print(f"not processed items ids: {not_procItemsId}")
+        
+        
 
 def printskip(new_valueContent, item):
     print(f"skiped {new_valueContent} in item {item['o:id']} because it would have written twice the same content (duplicate)")
