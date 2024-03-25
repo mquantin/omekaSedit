@@ -48,13 +48,33 @@ def callCreateEvents():
     rules = {
         'triggerProp': 'crm:P32_used_general_technique',
         'targetProp': 'crm:P32_used_general_technique', 
-        'targetItemClass': 'crm:E65_Creation',
-        'linkProp': 'crms:P1_has_conceived',
-        'action': 'hide',
-        'targetTemplate': 'conception',
-        'targetLabel': 'creation',
+        'targetItemClass': 'crm:E12_Production',
+        'linkProp': 'crm:P108_has_produced',
+        'action': '',
+        'targetTemplate': 'production',
+        'targetLabel': 'production',
         'targetItemSet': 'CCI itemSet'
         }
+    # rules = {
+    #     'triggerProp': 'dcterms:date',
+    #     'targetProp': 'crm:P4_has_time-span', 
+    #     'targetItemClass': 'crm:E65_Creation',
+    #     'linkProp': 'crms:P1_has_conceived',
+    #     'action': '',
+    #     'targetTemplate': 'conception',
+    #     'targetLabel': 'creation',
+    #     'targetItemSet': 'CCI itemSet'
+    #     }
+    # rules = {
+    #     'triggerProp': 'dcterms:creator',
+    #     'targetProp': 'crm:P14_carried_out_by', 
+    #     'targetItemClass': 'crm:E65_Creation',
+    #     'linkProp': 'crms:P1_has_conceived',
+    #     'action': '',
+    #     'targetTemplate': 'conception',
+    #     'targetLabel': 'creation',
+    #     'targetItemSet': 'CCI itemSet'
+    #     }
     pageNum=0
     processedItemsId, not_procItemsId, errorItemsId = [], [], []
     search = True

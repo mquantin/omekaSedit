@@ -30,6 +30,8 @@ def searchMatch(omeka, startItem, targetItemClassId, rules):
                     return "error"
                 elif rules['targetProp'] in subjectValueItem:
                     print(f"WARNING: target property {rules['targetProp']} allready in event of class {rules['targetItemClass']} connected with the property {rules['linkProp']}. Item id: {startItem['o:id']}")
+                    #TODO possibilité d'update de la valeur de l'item event via la propriété de l'item human made objet. 
+                    #response = input("Do you want to update the value / add the value / skip this item")
                     return "error"
                 else:#Item exists, is unique and looks ok. Edit it
                     return subjectValueItem
@@ -121,6 +123,7 @@ def createEvents(omeka, items, rules):
         #then move the content to the targetprop if targetProp != triggerProp
         if rules['triggerProp'] != rules['targetProp']:
             new_item = moveDataProp.moveDataPropOfitem(omeka, new_item, rules['triggerProp'], rules['targetProp'], targetPropId, delFrom = True)
+        print(new_item)
         #update or create depending on the case
         if found == "NA": omeka.add_item(new_item, template_id = targetTemplateId, class_id = targetItemClassId, item_set_id = itemSetId)
         else : omeka.update_resource(new_item, 'items')
