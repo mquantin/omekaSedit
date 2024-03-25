@@ -4,32 +4,32 @@
 from copy import deepcopy
 ###local imports
 import utils
-
+import moveDataProp
 
 
 
 #This avoids the undesired cases to be held manualy
 #this may find a correct targetItem to be edited
 def searchMatch(omeka, startItem, targetItemClassId, rules):
-    for subjProperty in startItem.get('@reverse', default={}).keys():
+    for subjProperty in startItem.get('@reverse', {}).keys():
         subjectValues = startItem['@reverse'][subjProperty]
-        subjectValuesIds = [subjectValue['id'].rsplit('/', 1)[1] for subjectValue in subjectValues]
+        subjectValuesIds = [subjectValue['@id'].rsplit('/', 1)[1] for subjectValue in subjectValues]
         for subjectValueId in subjectValuesIds:
             subjectValueItem = omeka.get_resource_by_id(subjectValueId, resource_type='items')
             subjectValueItemClass = subjectValueItem.get('o:resource_class', {}).get('o:id', None)
-            if subjectValueItemClass == targetItemClassId and subjProperty != rules['linkProperty']:
-                print(f'WARNING: event allready exists, but uses a wrong property ({subjProperty}). Item id: {startItem['o:id']}')
+            if subjectValueItemClass == targetItemClassId and subjProperty != rules['linkProp']:
+                print(f"WARNING: event allready exists, but uses a wrong property ({subjProperty}). Item id: {startItem['o:id']}")
                 # error.append(startItem['o:id'])
                 return "error"
-            elif subjectValueItemClass != targetItemClassId and subjProperty == rules['linkProperty']:
-                print(f'WARNING: event allready exists, but uses a wrong class ({subjectValueItemClass}). Item id: {startItem['o:id']}')
+            elif subjectValueItemClass != targetItemClassId and subjProperty == rules['linkProp']:
+                print(f"WARNING: event allready exists, but uses a wrong class ({subjectValueItemClass}). Item id: {startItem['o:id']}")
                 return "error"
-            elif subjectValueItemClass == targetItemClassId and subjProperty == rules['linkProperty']:
+            elif subjectValueItemClass == targetItemClassId and subjProperty == rules['linkProp']:
                 if len(subjectValues)>1 : 
-                    print(f'WARNING: multiple events connected with the property {rules['linkProperty']}. Item id: {startItem['o:id']}')
+                    print(f"WARNING: multiple events connected with the property {rules['linkProp']}. Item id: {startItem['o:id']}")
                     return "error"
                 elif rules['targetProp'] in subjectValueItem:
-                    print(f'WARNING: target property {rules['targetProp']} allready in event of class {rules['targetItemClass']} connected with the property {rules['linkProperty']}. Item id: {startItem['o:id']}')
+                    print(f"WARNING: target property {rules['targetProp']} allready in event of class {rules['targetItemClass']} connected with the property {rules['linkProp']}. Item id: {startItem['o:id']}")
                     return "error"
                 else:#Item exists, is unique and looks ok. Edit it
                     return subjectValueItem
@@ -59,9 +59,9 @@ def createEvents(omeka, items, rules):
         'triggerProp': 'dcterms:date',
         'targetProp': 'crm:P4_has_time-span', 
         'targetItemClass': 'crm:E65_Creation',
-        'linkProperty': 'crms:p1_has_conceived',
+        'linkProp': 'crms:p1_has_conceived',
         'action': 'hide' or 'delete' or '',
-        'targetTemplate': 'creation',
+        'targetTemplate': 'conception',
         'targetLabel': 'creation',
         'targetItemSet': 'CCI itemSet'
         }
@@ -71,6 +71,7 @@ def createEvents(omeka, items, rules):
     targetItemClassId = omeka.get_class_id(rules['targetItemClass'])
     targetTemplateId = omeka.get_template_id(rules['targetTemplate'])
     itemSetId = omeka.get_itemset_id(rules['targetItemSet'])
+    linkPropId = omeka.get_property_id(rules['linkProp'])
     processed = []
     not_proc = []
     error = []
@@ -83,7 +84,7 @@ def createEvents(omeka, items, rules):
             error.append(startItem['o:id'])
             continue
         elif found == "NA":#no event found, create a new event item
-            itemName = startItem['o:title'].rsplit(' - ', 1)[1]
+            itemName = startItem['o:title'].split(' - ', 1)[0]
             eventLabel = rules['targetLabel'] + ' de ' + itemName
             print('CREATED:', eventLabel)
             terms = {
@@ -108,17 +109,31 @@ def createEvents(omeka, items, rules):
         # new_item = utils.add_to_prop(omeka, new_item, targetPropId, mapping['targetProp'], newPropValue)
         
         # just copies the content of trigger prop into the target prop
-        new_itempropValues = new_item.setdefault(rules['targetProp'], [])
+        new_itempropValues = new_item.setdefault(rules['triggerProp'], [])
         new_itempropValues += [value for value in startItem[rules['triggerProp']]]
+        #then move the content to the targetprop
+        new_item = moveDataProp.moveDataPropOfitem(omeka, new_item, rules['triggerProp'], rules['targetProp'], targetPropId, delFrom = True)
+        # add linkprop
+        linkpropValue = [{
+            'value': startItem['o:id'],
+            'type': 'resource:item',
+        },]
+        new_item = utils.add_to_prop(omeka, new_item, linkPropId, rules['linkProp'], linkpropValue)
+        #update or create depending on the case
+        if found == "NA": omeka.add_item(new_item, template_id = targetTemplateId, class_id = targetItemClassId, item_set_id = itemSetId)
+        else : omeka.update_resource(new_item, 'items')
+        
+        ##################################
         # actions on startIitem properties
         update_startItem = deepcopy(startItem)
         if rules['action'] == 'hide':
             update_startItem = utils.hideValues(update_startItem, rules['triggerProp'])
+            print(update_startItem)
         elif rules['action'] == 'delete':
             update_startItem = utils.removeValues(update_startItem, rules['triggerProp'])
         omeka.update_resource(update_startItem, 'items')
-        omeka.update_resource(new_item, 'items')
-        processed.append(startItem)
+        processed.append(startItem['o:id'])
+        if new_item: break#only one loop
     return processed, not_proc, error
                     
 

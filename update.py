@@ -27,6 +27,7 @@ search = True
 def listClasses():
     pageNum=0
     allClasses = {}
+    search = True
     while search:
         pageNum+=1
         APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
@@ -43,19 +44,20 @@ def listClasses():
         print("\n")
 
 
-def createEvents():
+def callCreateEvents():
     rules = {
         'triggerProp': 'dcterms:date',
         'targetProp': 'crm:P4_has_time-span', 
         'targetItemClass': 'crm:E65_Creation',
-        'linkProperty': 'crms:p1_has_conceived',
+        'linkProp': 'crms:P1_has_conceived',
         'action': 'hide',
-        'targetTemplate': 'creation',
+        'targetTemplate': 'conception',
         'targetLabel': 'creation',
         'targetItemSet': 'CCI itemSet'
         }
     pageNum=0
-    processedItemsId, not_procItemsId, errorItemsId = []
+    processedItemsId, not_procItemsId, errorItemsId = [], [], []
+    search = True
     while search:
         pageNum+=1
         APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
@@ -65,9 +67,10 @@ def createEvents():
             processedItemsId += processed
             not_procItemsId += not_proc
             errorItemsId += error
+        break#only one page
     utils.printMutation("CREATE EVENTS", processedItemsId, not_procItemsId, errorItemsId)
 
-def updateClass():
+def callUpdateClass():
     E55type = namedtuple('E55type', 'uri label')
     rules = {
         'classFrom': 'crm:E31_Document',
@@ -77,7 +80,8 @@ def updateClass():
         'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"),#optional, value may be False
         }
     pageNum=0
-    processedItemsId, not_procItemsId, errorItemsId = []
+    processedItemsId, not_procItemsId, errorItemsId = [], [], []
+    search = True
     while search:
         pageNum+=1
         APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
@@ -89,10 +93,10 @@ def updateClass():
             errorItemsId += error
     utils.printMutation("CLASS UPDATE", processedItemsId, not_procItemsId, errorItemsId)
 
-def moveDataProp():
-    E55type = namedtuple('E55type', 'uri label')
+def callMoveDataProp():
     pageNum=0
-    processedItemsId, not_procItemsId, errorItemsId = []
+    processedItemsId, not_procItemsId, errorItemsId = [], [], []
+    search = True
     while search:
         pageNum+=1
         APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
@@ -104,3 +108,4 @@ def moveDataProp():
             errorItemsId += error
     utils.printMutation("MOVED DATA PROP", processedItemsId, not_procItemsId, errorItemsId)
 
+callCreateEvents()

@@ -35,7 +35,7 @@ def getItemsinPage(omeka, pageNum=1, itemSetName=None):
 
 def hideValue(itemValue):
     if 'is_public' in itemValue:
-        itemValue['is_public'] == 'false'
+        itemValue['is_public'] = False
     return itemValue
 
 def hideValues(item, propTerm): 
@@ -48,6 +48,7 @@ def hideValues(item, propTerm):
 def removeValues(item, propTerm):
     if propTerm not in item:
         return item
+    print(f"deleting values of {propTerm} in item n°{item['o:id']}")
     del(item[propTerm])        
     return item
 
@@ -64,9 +65,33 @@ def printMutation(mutationWord, processedItemsId, not_procItemsId, errorItemsId)
 def printskip(new_valueContent, item):
     print(f"skiped {new_valueContent} in item {item['o:id']} because it would have written twice the same content (duplicate)")
 
+def harvestExistingValues(propValues):
+    '''
+    given a a list of prop values as expressed by omeka api, 
+    creates a list of prop values to be uploaded as expressed for the python package
+    '''
+    existingPropvalues = []
+    for value in propValues:
+        origPropValueContent = None
+        if value['type'] == 'uri':
+            origPropValueContent = value['@id']
+            existingPropvalues.append({'value': origPropValueContent, 'type': 'uri', 'label': value['o:label']})
+        elif value['type'] == 'literal':
+            origPropValueContent = value['@value']
+            existingPropvalues.append({'value': origPropValueContent, 'type': 'literal'})
+        elif value['type'] == 'resource':
+            origPropValueContent = value['value_resource_id']
+            existingPropvalues.append({'value': origPropValueContent, 'type': 'item:resource'})
+    return existingPropvalues
+
 def add_to_prop(omeka, item, propID, propTerm, newValues):
     """
-     newValues is  a list of dict {'value': uri or literal content, 'type': 'uri' ou 'literal', 'label': only for uri}
+     newValues is  a list of dict 
+        {
+            'value': uri or literal content or resourceID, 
+            'type': 'uri' or 'literal' or 'resource:item', 
+            'label': only for uri
+            }
      propID and propTerm are input so they are queried outside the loop (calling this function). 
     """
     #creating the prop key if not exists
@@ -74,10 +99,9 @@ def add_to_prop(omeka, item, propID, propTerm, newValues):
     # managing existing values in target prop: avoid writing twice the same content. 
     # No  matter if this is an uri, resource or litteral. Only the content is checked
     # creates a list of all contents
-    existingValuesContent = []
-    existingValuesContent += [value['@id'] for value in propValues if '@id' in value]#all the uri / internal omeka resources
-    existingValuesContent += [value['@value'].strip() for value in propValues if '@value' in value]#all the litterals
-    #format the contents and roughly checks if no duplicated 
+    existingValuesContent = harvestExistingValues(propValues)
+    existingValuesContent = [value['value'] for value in existingValuesContent]#only the content
+    #format the contents and roughly checks if no duplicated
     formatted_newValues = [omeka.prepare_property_value(newValue, propID)  if (newValue['value'] not in existingValuesContent) else printskip(item,newValue['value']) for newValue in newValues]
     propValues += formatted_newValues
     return item
