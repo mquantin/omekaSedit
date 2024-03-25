@@ -92,10 +92,17 @@ def createEvents(omeka, items, rules):
                     {
                         'value': eventLabel
                     }
+                ],
+                rules['linkProp'] : [
+                    {
+                        'value': startItem['o:id'],
+                        'type': 'resource:item',
+                    },
                 ]
             }
             new_item = omeka.prepare_item_payload_using_template(terms, targetTemplateId)#a new item
         else: #edit existing event 
+            print('found item n°', found['o:id'])
             new_item = deepcopy(found)# edit existing item matching the criterias of serachMatch
         # newPropValues = [{'value': value.get(''), 'type': 'uri', 'label': E55Type.label} for value in startItem[mapping['triggerProp']]]
         # newPropValues = [
@@ -111,14 +118,9 @@ def createEvents(omeka, items, rules):
         # just copies the content of trigger prop into the target prop
         new_itempropValues = new_item.setdefault(rules['triggerProp'], [])
         new_itempropValues += [value for value in startItem[rules['triggerProp']]]
-        #then move the content to the targetprop
-        new_item = moveDataProp.moveDataPropOfitem(omeka, new_item, rules['triggerProp'], rules['targetProp'], targetPropId, delFrom = True)
-        # add linkprop
-        linkpropValue = [{
-            'value': startItem['o:id'],
-            'type': 'resource:item',
-        },]
-        new_item = utils.add_to_prop(omeka, new_item, linkPropId, rules['linkProp'], linkpropValue)
+        #then move the content to the targetprop if targetProp != triggerProp
+        if rules['triggerProp'] != rules['targetProp']:
+            new_item = moveDataProp.moveDataPropOfitem(omeka, new_item, rules['triggerProp'], rules['targetProp'], targetPropId, delFrom = True)
         #update or create depending on the case
         if found == "NA": omeka.add_item(new_item, template_id = targetTemplateId, class_id = targetItemClassId, item_set_id = itemSetId)
         else : omeka.update_resource(new_item, 'items')
@@ -128,7 +130,6 @@ def createEvents(omeka, items, rules):
         update_startItem = deepcopy(startItem)
         if rules['action'] == 'hide':
             update_startItem = utils.hideValues(update_startItem, rules['triggerProp'])
-            print(update_startItem)
         elif rules['action'] == 'delete':
             update_startItem = utils.removeValues(update_startItem, rules['triggerProp'])
         omeka.update_resource(update_startItem, 'items')

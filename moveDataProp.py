@@ -11,7 +11,6 @@ def moveDataPropOfitem(omeka, item, propFrom, propTo, propTo_id, delFrom):
     new_item = deepcopy(item)
     #catches the content to be copied for each occurence in the propFrom of the item (maybe several values for the same prop)
     newPropvalues = utils.harvestExistingValues(new_item[propFrom])
-    print(newPropvalues)
     new_item = utils.add_to_prop(omeka, new_item, propTo_id, propTo, newPropvalues)
     if delFrom:
         del new_item[propFrom]

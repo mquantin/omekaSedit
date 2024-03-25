@@ -46,8 +46,8 @@ def listClasses():
 
 def callCreateEvents():
     rules = {
-        'triggerProp': 'dcterms:date',
-        'targetProp': 'crm:P4_has_time-span', 
+        'triggerProp': 'crm:P32_used_general_technique',
+        'targetProp': 'crm:P32_used_general_technique', 
         'targetItemClass': 'crm:E65_Creation',
         'linkProp': 'crms:P1_has_conceived',
         'action': 'hide',
@@ -60,7 +60,7 @@ def callCreateEvents():
     search = True
     while search:
         pageNum+=1
-        APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
+        APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet', resourceClassTerm='crm:E22_Human-Made_Object')
         search = len(APIitems['results'])#0 quand il n'y a plus rien 
         if search:
             processed, not_proc, error = createEvents(omeka, APIitems, rules)

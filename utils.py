@@ -56,7 +56,7 @@ def printMutation(mutationWord, processedItemsId, not_procItemsId, errorItemsId)
         
         
 
-def printskip(new_valueContent, item):
+def printskip(item, new_valueContent):
     print(f"skiped {new_valueContent} in item {item['o:id']} because it would have written twice the same content (duplicate)")
 
 def harvestExistingValues(propValues):
