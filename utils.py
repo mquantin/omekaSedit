@@ -1,7 +1,7 @@
 #!python3
 # -*- coding: utf-8 -*-
 
-def getItemsinPage(omeka, pageNum=1, itemSetName=None):
+def getItemsinPage(omeka, pageNum=1, itemSetName=None, resourceClassTerm=None):
     # basic search
     # APIitems = omeka.search_items('', page=6)
 
@@ -13,18 +13,12 @@ def getItemsinPage(omeka, pageNum=1, itemSetName=None):
 
     # # search items by property exists
     # APIitems = omeka.filter_items_by_property(filter_property='crm:P2_has_type', filter_type='ex', item_set_id = itemSetId, page=pageNum)
-
-    itemSets = omeka.get_resources('item_sets', search=itemSetName)
-    if len(itemSets['results']) > 1 : 
-        print('item set search query unclear, multiple results:')
-        for itemSet in itemSets['results']:
-            print(f"id: {itemSet['o:id']}, title: {itemSet['o:title']}")
-        return
-    if len(itemSets['results']) == 0 : 
+    itemSetId = omeka.get_itemset_id(itemSetName)
+    resourceClassId = omeka.get_class_id(resourceClassTerm)
+    if itemSetName and not itemSetId:
         print('aucun item set trouvé')
         return
-    itemSetId = itemSets['results'][0]['o:id']
-    APIitems = omeka.search_items('', item_set_id = itemSetId, page=pageNum)
+    APIitems = omeka.search_items('', item_set_id = itemSetId, resource_class_id = resourceClassId, page=pageNum)
     if APIitems['results']:
         # a améliorer car la dernière page fausse la valeur de pageQ
         pagesQ = int(APIitems['total_results']/len(APIitems['results']))+1
