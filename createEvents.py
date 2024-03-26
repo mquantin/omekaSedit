@@ -59,8 +59,11 @@ def searchMatch(omeka, startItem, targetItemClassId, rules):
                     if response == 'a':
                         return subjectValueItem
                     elif response == 'u':
-                        del(subjectValueItem['targetProp'])#remove it, so it will be updated as if it was empty
-                        return subjectValueItem
+                        confirm = input("you're about to delete data, are you sure y/n")
+                        if confirm == "y":
+                            del(subjectValueItem[rules['targetProp']])#remove it, so it will be updated as if it was empty
+                            return subjectValueItem
+                        else: return "skip"
                     else: 
                         return "skip"
                 else:#Item exists, is unique and looks ok. Edit it
