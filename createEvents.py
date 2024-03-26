@@ -20,18 +20,17 @@ def offerUpdateFoundEvent(subjectValueItem, startItem, triggerProp, targetProp):
         print("\tvalue in event item: ", valuesInTargetItem)
         if valuesInTargetItem.issubset(valuesInStartItem):#there are new values, but nothing removed
             print("-> Only new values")
-            response = input("Do you want to update the value of the event (u) OR skip this item (s)")
-            #response = input("Do you want:\nto update the value of the event (u) / update all items (U) / add the value to the event (a) / add for all items (A) / skip this item (s) / skip all items (S)")
+            return input("Do you want to update the value of the event (u) OR skip this item (s), please type (u/s): ")
         elif valuesInTargetItem.isdisjoint(valuesInStartItem):#
             print("-> Disjoint values")
-            response = input("Do you want to add the value ti the event (a) OR skip this item (s)")
+            return input("Do you want to add the value ti the event (a) OR skip this item (s), please type (a/s): ")
         elif valuesInTargetItem.issuperset(valuesInStartItem):#there are removed values, but nothing new
             print("-> Only removed values")
-            response = input("Do you want:\nto update the value of the event (u) OR skip this item (s)")
+            return input("Do you want:\nto update the value of the event (u) OR skip this item (s), please type (u/s): ")
         else:#there are existing, new and deleted values mixed
             print("-> Existing, Deleted and New values mixed")
-            response = input("Do you want:\nto update the value of the event (u) OR skip this item (s)")
-    return response
+            return input("Do you want:\nto update the value of the event (u) OR skip this item (s), please type (u/s): ")
+    return ''
 
 
 #This avoids the undesired cases to be held manualy
@@ -44,20 +43,18 @@ def searchMatch(omeka, startItem, targetItemClassId, rules):
             subjectValueItem = omeka.get_resource_by_id(subjectValueId, resource_type='items')
             subjectValueItemClass = subjectValueItem.get('o:resource_class', {}).get('o:id', None)
             if subjectValueItemClass == targetItemClassId and subjProperty != rules['linkProp']:
-                print(f"WARNING: event allready exists, but uses a wrong property ({subjProperty}). Item id: {startItem['o:id']}")
+                print(f"WARNING: event allready exists, but uses a wrong property ({subjProperty}). Item id: {startItem['o:id']} skipped.")
                 # error.append(startItem['o:id'])
                 return "error"
             elif subjectValueItemClass != targetItemClassId and subjProperty == rules['linkProp']:
-                print(f"WARNING: event allready exists, but uses a wrong class ({subjectValueItemClass}). Item id: {startItem['o:id']}")
+                print(f"WARNING: event allready exists, but uses a wrong class ({subjectValueItemClass}). Item id: {startItem['o:id']} skipped")
                 return "error"
             elif subjectValueItemClass == targetItemClassId and subjProperty == rules['linkProp']:
                 if len(subjectValues)>1 : 
-                    print(f"WARNING: cannot choose. Multiple events connected with the property {rules['linkProp']}. Item id: {startItem['o:id']}")
+                    print(f"WARNING: cannot choose. Multiple events connected with the property {rules['linkProp']}. Item id: {startItem['o:id']} skipped")
                     return "error"
                 elif rules['targetProp'] in subjectValueItem:
                     print(f"WARNING: target property {rules['targetProp']} allready in event of class {rules['targetItemClass']} connected with the property {rules['linkProp']}. Item id: {startItem['o:id']}")
-                    #TODO possibilité d'update de la valeur de l'item event via la propriété de l'item human made objet. 
-                    #response = input("Do you want to update the value / add the value / skip this item")
                     response = offerUpdateFoundEvent(subjectValueItem, startItem, rules['triggerProp'], rules['targetProp'])
                     if response == 'a':
                         return subjectValueItem
@@ -140,7 +137,7 @@ def createEvents(omeka, items, rules):
             }
             new_item = omeka.prepare_item_payload_using_template(terms, targetTemplateId)#a new item
         else: #edit existing event 
-            print('found item n°', found['o:id'])
+            print('FOUND item n°', found['o:id'])
             new_item = deepcopy(found)# edit existing item matching the criterias of serachMatch
         # newPropValues = [{'value': value.get(''), 'type': 'uri', 'label': E55Type.label} for value in startItem[mapping['triggerProp']]]
         # newPropValues = [
@@ -172,7 +169,6 @@ def createEvents(omeka, items, rules):
             update_startItem = utils.removeValues(update_startItem, rules['triggerProp'])
         omeka.update_resource(update_startItem, 'items')
         processed.append(startItem['o:id'])
-        if new_item: break#only one loop
     return processed, not_proc, error
                     
 
