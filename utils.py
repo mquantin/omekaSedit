@@ -66,16 +66,23 @@ def harvestExistingValues(propValues):
     '''
     existingPropvalues = []
     for value in propValues:
-        origPropValueContent = None
+        origPropValueContent, datatype, urilabel = None, None, None
         if value['type'] == 'uri':
             origPropValueContent = value['@id']
-            existingPropvalues.append({'value': origPropValueContent, 'type': 'uri', 'label': value['o:label']})
+            datatype = 'uri'
+            urilabel = value['o:label']
         elif value['type'] == 'literal':
             origPropValueContent = value['@value']
-            existingPropvalues.append({'value': origPropValueContent, 'type': 'literal'})
+            datatype = 'literal'
         elif value['type'] == 'resource':
             origPropValueContent = value['value_resource_id']
-            existingPropvalues.append({'value': origPropValueContent, 'type': 'resource:item'})
+            datatype = 'resource:item'
+        elif value['type'] == 'numeric:timestamp':
+            origPropValueContent = value['@value']
+            datatype = 'numeric:timestamp'
+        propValue = {'value': origPropValueContent, 'type': datatype, }
+        if urilabel: propValue['label'] = urilabel
+        existingPropvalues.append(propValue)
     return existingPropvalues
 
 def add_to_prop(omeka, item, propID, propTerm, newValues):
@@ -96,6 +103,7 @@ def add_to_prop(omeka, item, propID, propTerm, newValues):
     existingValuesContent = harvestExistingValues(propValues)
     existingValuesContent = [value['value'] for value in existingValuesContent]#only the content
     #format the contents and roughly checks if no duplicated
+    print(newValues)
     formatted_newValues = [omeka.prepare_property_value(newValue, propID)  if (newValue['value'] not in existingValuesContent) else printskip(item,newValue['value']) for newValue in newValues]
     propValues += formatted_newValues
     return item
