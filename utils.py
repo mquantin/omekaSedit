@@ -96,7 +96,6 @@ def add_to_prop(omeka, item, propID, propTerm, newValues):
     existingValuesContent = harvestExistingValues(propValues)
     existingValuesContent = [value['value'] for value in existingValuesContent]#only the content
     #format the contents and roughly checks if no duplicated
-    print(newValues)
     formatted_newValues = [omeka.prepare_property_value(newValue, propID)  if (newValue['value'] not in existingValuesContent) else printskip(item,newValue['value']) for newValue in newValues]
     propValues += formatted_newValues
     return item
