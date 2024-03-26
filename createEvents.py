@@ -6,6 +6,32 @@ from copy import deepcopy
 import utils
 import moveDataProp
 
+def contentsAsSetOfTuples(itemPropValues):
+    valuesInItem = [tuple(valuedict.values()) for valuedict in utils.harvestExistingValues(itemPropValues)]
+    return set(valuesInItem)
+
+def offerUpdateFoundEvent(subjectValueItem, startItem, triggerProp, targetProp):
+    #check if values differs
+    valuesInStartItem = contentsAsSetOfTuples(startItem[triggerProp])#utils.harvestExistingValues(startItem[triggerProp])
+    valuesInTargetItem = contentsAsSetOfTuples(subjectValueItem[targetProp])#utils.harvestExistingValues(subjectValueItem[targetProp])
+    symDiff =  valuesInStartItem ^ valuesInTargetItem
+    if symDiff:
+        print("\tvalue in object item: ", valuesInStartItem)
+        print("\tvalue in event item: ", valuesInTargetItem)
+        if valuesInTargetItem.issubset(valuesInStartItem):#there are new values, but nothing removed
+            print("-> Only new values")
+            response = input("Do you want to update the value of the event (u) OR skip this item (s)")
+            #response = input("Do you want:\nto update the value of the event (u) / update all items (U) / add the value to the event (a) / add for all items (A) / skip this item (s) / skip all items (S)")
+        elif valuesInTargetItem.isdisjoint(valuesInStartItem):#
+            print("-> Disjoint values")
+            response = input("Do you want to add the value ti the event (a) OR skip this item (s)")
+        elif valuesInTargetItem.issuperset(valuesInStartItem):#there are removed values, but nothing new
+            print("-> Only removed values")
+            response = input("Do you want:\nto update the value of the event (u) OR skip this item (s)")
+        else:#there are existing, new and deleted values mixed
+            print("-> Existing, Deleted and New values mixed")
+            response = input("Do you want:\nto update the value of the event (u) OR skip this item (s)")
+    return response
 
 
 #This avoids the undesired cases to be held manualy
@@ -26,13 +52,20 @@ def searchMatch(omeka, startItem, targetItemClassId, rules):
                 return "error"
             elif subjectValueItemClass == targetItemClassId and subjProperty == rules['linkProp']:
                 if len(subjectValues)>1 : 
-                    print(f"WARNING: multiple events connected with the property {rules['linkProp']}. Item id: {startItem['o:id']}")
+                    print(f"WARNING: cannot choose. Multiple events connected with the property {rules['linkProp']}. Item id: {startItem['o:id']}")
                     return "error"
                 elif rules['targetProp'] in subjectValueItem:
                     print(f"WARNING: target property {rules['targetProp']} allready in event of class {rules['targetItemClass']} connected with the property {rules['linkProp']}. Item id: {startItem['o:id']}")
                     #TODO possibilité d'update de la valeur de l'item event via la propriété de l'item human made objet. 
                     #response = input("Do you want to update the value / add the value / skip this item")
-                    return "error"
+                    response = offerUpdateFoundEvent(subjectValueItem, startItem, rules['triggerProp'], rules['targetProp'])
+                    if response == 'a':
+                        return subjectValueItem
+                    elif response == 'u':
+                        del(subjectValueItem['targetProp'])#remove it, so it will be updated as if it was empty
+                        return subjectValueItem
+                    else: 
+                        return "skip"
                 else:#Item exists, is unique and looks ok. Edit it
                     return subjectValueItem
     return "NA"# when this line is reached, no match has been been found, but no error is to handle, a new event item should be created
@@ -85,6 +118,9 @@ def createEvents(omeka, items, rules):
         if found == "error":
             error.append(startItem['o:id'])
             continue
+        elif found == "skip":
+            not_proc.append(startItem['o:id']) 
+            continue
         elif found == "NA":#no event found, create a new event item
             itemName = startItem['o:title'].split(' - ', 1)[0]
             eventLabel = rules['targetLabel'] + ' de ' + itemName
@@ -123,7 +159,6 @@ def createEvents(omeka, items, rules):
         #then move the content to the targetprop if targetProp != triggerProp
         if rules['triggerProp'] != rules['targetProp']:
             new_item = moveDataProp.moveDataPropOfitem(omeka, new_item, rules['triggerProp'], rules['targetProp'], targetPropId, delFrom = True)
-        print(new_item)
         #update or create depending on the case
         if found == "NA": omeka.add_item(new_item, template_id = targetTemplateId, class_id = targetItemClassId, item_set_id = itemSetId)
         else : omeka.update_resource(new_item, 'items')
