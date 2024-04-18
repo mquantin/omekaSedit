@@ -65,7 +65,6 @@ def updateClass(omeka, items, rules):
                 updated_item = omeka.update_resource(new_item, 'items')
                 processed += [origItem['o:id']]
                 assert origItem['o:id'] == updated_item['o:id']
-                break # for testing : one loop for each page only. 
         else: 
             not_proc += [origItem['o:id']]
     return processed, not_proc, error

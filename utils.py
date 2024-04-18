@@ -13,12 +13,13 @@ def getItemsinPage(omeka, pageNum=1, itemSetName=None, resourceClassTerm=None):
 
     # # search items by property exists
     # APIitems = omeka.filter_items_by_property(filter_property='crm:P2_has_type', filter_type='ex', item_set_id = itemSetId, page=pageNum)
-    itemSetId = omeka.get_itemset_id(itemSetName)
-    resourceClassId = omeka.get_class_id(resourceClassTerm)
+    itemSetId = omeka.get_itemset_id(itemSetName) if itemSetName else None
+    resourceClassId = omeka.get_class_id(resourceClassTerm) if resourceClassTerm else None
     if itemSetName and not itemSetId:
         print('aucun item set trouvé')
         return
     APIitems = omeka.search_items('', item_set_id = itemSetId, resource_class_id = resourceClassId, page=pageNum)
+    #APIitems = omeka.search_items('', item_set_id = itemSetId, page=pageNum)
     if APIitems['results']:
         # a améliorer car la dernière page fausse la valeur de pageQ
         pagesQ = int(APIitems['total_results']/len(APIitems['results']))+1
@@ -103,7 +104,6 @@ def add_to_prop(omeka, item, propID, propTerm, newValues):
     existingValuesContent = harvestExistingValues(propValues)
     existingValuesContent = [value['value'] for value in existingValuesContent]#only the content
     #format the contents and roughly checks if no duplicated
-    print(newValues)
     formatted_newValues = [omeka.prepare_property_value(newValue, propID)  if (newValue['value'] not in existingValuesContent) else printskip(item,newValue['value']) for newValue in newValues]
     propValues += formatted_newValues
     return item
