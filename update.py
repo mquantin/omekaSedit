@@ -87,25 +87,24 @@ def callCreateEvents():
             processedItemsId += processed
             not_procItemsId += not_proc
             errorItemsId += error
-        break#only one page
     utils.printMutation("CREATE EVENTS", processedItemsId, not_procItemsId, errorItemsId)
 
 def callUpdateClass():
     E55type = namedtuple('E55type', 'uri label')
-    # rules = {
-    #     'classFrom': 'crm:E36_Visual_Item',
-    #     'classTo': 'crm:E22_Human-Made_Object', 
-    #     'templateTo': 'mobilier',
-    #     'templateFrom': False,#optional, value may be False
-    #     'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300191086", label="Visual Works (AAT)"),#optional, value may be False
-    #     }
     rules = {
-        'classFrom': 'crm:E31_Document',
+        'classFrom': 'crm:E36_Visual_Item',
         'classTo': 'crm:E22_Human-Made_Object', 
         'templateTo': 'mobilier',
         'templateFrom': False,#optional, value may be False
-        'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"),#optional, value may be False
+        'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300191086", label="Visual Works (AAT)"),#optional, value may be False
         }
+    # rules = {
+    #     'classFrom': 'crm:E31_Document',
+    #     'classTo': 'crm:E22_Human-Made_Object', 
+    #     'templateTo': 'mobilier',
+    #     'templateFrom': False,#optional, value may be False
+    #     'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"),#optional, value may be False
+    #     }
     pageNum=0
     processedItemsId, not_procItemsId, errorItemsId = [], [], []
     search = True
@@ -135,4 +134,4 @@ def callMoveDataProp():
             errorItemsId += error
     utils.printMutation("MOVED DATA PROP", processedItemsId, not_procItemsId, errorItemsId)
 
-callUpdateClass()
+callCreateEvents()
