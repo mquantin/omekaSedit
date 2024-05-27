@@ -7,7 +7,7 @@ from collections import namedtuple
 from omekastoolsFork import OmekaAPIClient
 import utils
 from moveDataProp import moveDataProp
-from updateClass import updateClass
+import updateClass
 from updateThumbnail import updateThumbnail
 from createEvents import createEvents
 
@@ -105,6 +105,7 @@ def callUpdateClass():
     #     'templateFrom': False,#optional, value may be False
     #     'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"),#optional, value may be False
     #     }
+    rules = updateClass.prepareRules(omeka, rules)
     pageNum=0
     processedItemsId, not_procItemsId, errorItemsId = [], [], []
     search = True
@@ -113,7 +114,7 @@ def callUpdateClass():
         APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
         search = len(APIitems['results'])#0 quand il n'y a plus rien 
         if search:
-            processed, not_proc, error = updateClass(omeka, APIitems, rules)
+            processed, not_proc, error = updateClass.updateClass(omeka, APIitems, rules)
             processedItemsId += processed
             not_procItemsId += not_proc
             errorItemsId += error
@@ -134,4 +135,6 @@ def callMoveDataProp():
             errorItemsId += error
     utils.printMutation("MOVED DATA PROP", processedItemsId, not_procItemsId, errorItemsId)
 
-callCreateEvents()
+#listClasses()
+callUpdateClass()
+# callCreateEvents()

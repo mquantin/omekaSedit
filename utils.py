@@ -15,6 +15,7 @@ def getItemsinPage(omeka, pageNum=1, itemSetName=None, resourceClassTerm=None):
     # APIitems = omeka.filter_items_by_property(filter_property='crm:P2_has_type', filter_type='ex', item_set_id = itemSetId, page=pageNum)
     itemSetId = omeka.get_itemset_id(itemSetName) if itemSetName else None
     resourceClassId = omeka.get_class_id(resourceClassTerm) if resourceClassTerm else None
+    pagesQ = 0#ca marche pas car al function est appellé a chaque fois (la boucle des pages est hors de la fonction)
     if itemSetName and not itemSetId:
         print('aucun item set trouvé')
         return
@@ -22,8 +23,13 @@ def getItemsinPage(omeka, pageNum=1, itemSetName=None, resourceClassTerm=None):
     #APIitems = omeka.search_items('', item_set_id = itemSetId, page=pageNum)
     if APIitems['results']:
         # a améliorer car la dernière page fausse la valeur de pageQ
-        pagesQ = int(APIitems['total_results']/len(APIitems['results']))+1
-        print(f"\n\nnombre d'item total: {APIitems['total_results']}, page: {pageNum}/{pagesQ}")
+        if APIitems['total_results'] > len(APIitems['results']) and pagesQ == 0:
+            pagesQ = int(APIitems['total_results']/len(APIitems['results']))+1
+            print('here')
+        elif pagesQ == 0: 
+            pagesQ = 1
+        print(pagesQ)
+        print(f"\nnombre d'item total: {APIitems['total_results']}, page: {pageNum}/{pagesQ}")
     else:
         print(f"pas d'autres items")
     return APIitems
