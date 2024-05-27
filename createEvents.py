@@ -107,6 +107,9 @@ def createEvents(omeka, items, rules):
     targetTemplateId = omeka.get_template_id(rules['targetTemplate'])
     itemSetId = omeka.get_itemset_id(rules['targetItemSet'])
     linkPropId = omeka.get_property_id(rules['linkProp'])
+    if not (targetPropId and targetItemClassId and targetTemplateId and itemSetId and linkPropId) : 
+        print("ERROR missing data in rules or missing omeka resource (template, itemSet, etc.)")
+        return [], [], []
     processed = []
     not_proc = []
     error = []
