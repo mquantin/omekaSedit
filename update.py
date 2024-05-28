@@ -14,7 +14,7 @@ from createEvents import createEvents
 
 
 #read credential API as a yaml file
-with open("APIkey.key", 'r') as stream:
+with open("APIkey.yaml", 'r') as stream:
     apiKey = yaml.safe_load(stream)
 
 omeka = OmekaAPIClient(apiKey['APIurl'], 
@@ -25,12 +25,13 @@ search = True
 
 
 def listClasses():
+    itemSetId = omeka.get_itemset_id('CCI itemSet')
     pageNum=0
     allClasses = {}
     search = True
     while search:
         pageNum+=1
-        APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
+        APIitems = omeka.search_items('',  item_set_id = itemSetId, page = pageNum)
         search = len(APIitems['results'])#0 quand il n'y a plus rien 
         if search:
             seenClasses = utils.checkClasses(APIitems)
@@ -91,42 +92,63 @@ def callCreateEvents():
 
 def callUpdateClass():
     E55type = namedtuple('E55type', 'uri label')
+    # rules = {
+    #     'itemSetFrom': 'CCI itemSet',
+    #     'classFrom': 'crm:E36_Visual_Item',
+    #     'classTo': 'crm:E22_Human-Made_Object', 
+    #     'templateTo': 'mobilier',
+    #     'templateFrom': None,#optional, value may be False
+    #     'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300191086", label="Visual Works (AAT)"),#optional, value may be False
+    #     }
     rules = {
-        'classFrom': 'crm:E36_Visual_Item',
+        'itemSetFrom': 'CCI itemSet',
+        'classFrom': 'crm:E31_Document',
         'classTo': 'crm:E22_Human-Made_Object', 
         'templateTo': 'mobilier',
         'templateFrom': False,#optional, value may be False
-        'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300191086", label="Visual Works (AAT)"),#optional, value may be False
+        'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"),#optional, value may be False
         }
-    # rules = {
-    #     'classFrom': 'crm:E31_Document',
-    #     'classTo': 'crm:E22_Human-Made_Object', 
-    #     'templateTo': 'mobilier',
-    #     'templateFrom': False,#optional, value may be False
-    #     'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"),#optional, value may be False
-    #     }
-    rules = updateClass.prepareRules(omeka, rules)
+    dataRules = updateClass.prepareRules(omeka, rules)
+    if not dataRules:#some rules has not been found
+        return
+    totalResults, pagesQ = utils.getQuantities(omeka, itemSetId=dataRules['itemSetFrom'], resourceClassId=dataRules['classFrom']['o:id'])
+    print(f"#### UPDATE CLASSES ####")
+    print(f"""
+    nombre d'item total: {totalResults}
+    item set from\n\tlabel: {rules['itemSetFrom']} \n\tid: {dataRules['itemSetFrom']}
+    template to\n\tlabel: {rules['templateTo']} \n\tid: {dataRules['templateTo']['o:id']}
+    class from\n\tterm: {dataRules['classFrom']['o:term']} \n\tid: {dataRules['classFrom']['o:id']}
+    class to\n\tterm: {dataRules['classTo']['o:term']} \n\tid: {dataRules['classTo']['o:id']}
+    """)
     pageNum=0
     processedItemsId, not_procItemsId, errorItemsId = [], [], []
     search = True
     while search:
         pageNum+=1
-        APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
+        print(f"\npage: {pageNum}/{pagesQ}")
+        #APIitems = utils.getItemsinPage(omeka, pageNum, itemSetId=dataRules['itemSetFrom'], resourceClassId=dataRules['classFrom']['o:id'])
+        APIitems = omeka.search_items('', 
+                                      item_set_id = dataRules['itemSetFrom'], 
+                                      resource_class_id = dataRules['classFrom']['o:id'], 
+                                      page=pageNum)
         search = len(APIitems['results'])#0 quand il n'y a plus rien 
         if search:
-            processed, not_proc, error = updateClass.updateClass(omeka, APIitems, rules)
+            processed, not_proc, error = updateClass.updateClass(omeka, APIitems, dataRules)
             processedItemsId += processed
             not_procItemsId += not_proc
             errorItemsId += error
+        else: 
+            print(f"no more items")
     utils.printMutation("CLASS UPDATE", processedItemsId, not_procItemsId, errorItemsId)
 
 def callMoveDataProp():
+    itemSetId = omeka.get_itemset_id('CCI itemSet')
     pageNum=0
     processedItemsId, not_procItemsId, errorItemsId = [], [], []
     search = True
     while search:
         pageNum+=1
-        APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet')
+        APIitems = utils.getItemsinPage(omeka, pageNum, itemSetId=itemSetId)
         search = len(APIitems['results'])#0 quand il n'y a plus rien 
         if search:
             processed, not_proc, error = moveDataProp(omeka, APIitems, "dcterms:type", propTo = 'crm:P2_has_type', delFrom = True)
@@ -135,6 +157,6 @@ def callMoveDataProp():
             errorItemsId += error
     utils.printMutation("MOVED DATA PROP", processedItemsId, not_procItemsId, errorItemsId)
 
-#listClasses()
+# listClasses()
 callUpdateClass()
 # callCreateEvents()
