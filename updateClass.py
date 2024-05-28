@@ -21,15 +21,15 @@ def prepareRules(omeka, rules):
     return data
 
 
-def updateClass(omeka, items, rules):
+def updateClass(omeka, items, datarules):
     """
     change class and resource template
     rules is a dict like: 
     {
-        'classFrom': 'crm:E31_Document',
-        'classTo': 'crm:E22_Human-Made_Object', 
-        'templateTo': 'mobilier',
-        'templateFrom': False,#optional, value may be False
+        'classFrom': classRepresentation,
+        'classTo': classRepresentation, 
+        'templateTo': templateRepresentation,
+        'templateFrom': templateRepresentation,#optional, value may be False
         'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"),#optional, value may be False
     }
     templateFrom is optional and restrict the provenance.
@@ -40,26 +40,29 @@ def updateClass(omeka, items, rules):
     error = []
     for origItem in items['results']:
         template = origItem.get('o:resource_template')
-        if not template:
+        if datarules['templateFrom'] and not template:
             print("  ERROR this item has no template (skipped):", origItem['o:id'])
             error += [origItem['o:id']]
-        elif rules['templateFrom'] and (template['o:id'] != rules['templateFrom']['o:id']):
+            continue
+        elif datarules['templateFrom'] and (template['o:id'] != datarules['templateFrom']['o:id']):
             print(f"  ERROR this item uses a different template (skipped): {origItem['o:id']}; template id {template['o:id']}")
             error += [origItem['o:id']]
+            continue
         else:
             print(f"processing item id n°{origItem['o:id']} classe: {origItem['o:resource_class']['o:id']} template: {template['o:id']}")
             new_item = deepcopy(origItem)
             new_item['o:resource_class'] = {
-                '@id': rules['classTo']['@id'],
-                'o:id':rules['classTo']['o:id']
+                '@id': datarules['classTo']['@id'],
+                'o:id':datarules['classTo']['o:id']
             }
             new_item['o:resource_template'] = {
-                '@id': rules['templateTo']['@id'],
-                'o:id':rules['templateTo']['o:id']
+                '@id': datarules['templateTo']['@id'],
+                'o:id':datarules['templateTo']['o:id']
             }
-            if rules['E55TypeValue']:
-                newPropValues = [{'value': rules['E55TypeValue'].uri, 'type': 'uri', 'label': rules['E55TypeValue'].label},]
-                new_item = utils.add_to_prop(omeka, new_item, rules['E55TypeProp'], 'crm:P2_has_type', newPropValues)
+            if datarules['E55TypeValue']:
+                newPropValues = [{'value': datarules['E55TypeValue'].uri, 'type': 'uri', 'label': datarules['E55TypeValue'].label},]
+                new_item = utils.add_to_prop(omeka, new_item, datarules['E55TypeProp'], 'crm:P2_has_type', newPropValues)
+            # payload = omeka.prepare_item_payload_using_template(new_item, datarules['templateTo']['o:id'])
             updated_item = omeka.update_resource(new_item, 'items')
             processed += [origItem['o:id']]
             assert origItem['o:id'] == updated_item['o:id']
