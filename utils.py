@@ -2,29 +2,26 @@
 # -*- coding: utf-8 -*-
 
 
-def getQuantities(omeka, itemSetId=None, resourceClassId=None):
-    APIitems = omeka.search_items('', item_set_id = itemSetId, resource_class_id = resourceClassId, page=1)
+# basic search
+# APIitems = omeka.search_items('', page=6)
+
+# # search items by class
+# APIitems = omeka.search_items(None, resource_class_id=omeka.get_property_id('crm:E21_Person'), )
+
+# # search items by property value
+# APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_value='', filter_type='in')
+
+# # search items by property exists
+# APIitems = omeka.filter_items_by_property(filter_property='crm:P2_has_type', filter_type='ex', item_set_id = itemSetId, page=pageNum)
+# APIitems = omeka.search_items('', item_set_id = itemSetId, page=pageNum)
+
+
+def getQuantities(APIitems):
     if APIitems['total_results'] > len(APIitems['results']):#more than one page
         pagesQ = int(APIitems['total_results']/len(APIitems['results']))+1
     else:
         pagesQ =1
     return APIitems['total_results'], pagesQ
-
-def getItemsinPage(omeka, pageNum=1, itemSetId=None, resourceClassId=None):
-    # basic search
-    # APIitems = omeka.search_items('', page=6)
-
-    # # search items by class
-    # APIitems = omeka.search_items(None, resource_class_id=omeka.get_property_id('crm:E21_Person'), )
-
-    # # search items by property value
-    # APIitems = omeka.filter_items_by_property(filter_property='crm:P5_consists_of', filter_value='', filter_type='in')
-
-    # # search items by property exists
-    # APIitems = omeka.filter_items_by_property(filter_property='crm:P2_has_type', filter_type='ex', item_set_id = itemSetId, page=pageNum)
-    APIitems = omeka.search_items('', item_set_id = itemSetId, resource_class_id = resourceClassId, page=pageNum)
-    #APIitems = omeka.search_items('', item_set_id = itemSetId, page=pageNum)
-    return APIitems
 
 def hideValue(itemValue):
     if 'is_public' in itemValue:

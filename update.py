@@ -90,6 +90,7 @@ def callCreateEvents():
             errorItemsId += error
     utils.printMutation("CREATE EVENTS", processedItemsId, not_procItemsId, errorItemsId)
 
+
 def callUpdateClass():
     E55type = namedtuple('E55type', 'uri label')
     # rules = {
@@ -111,10 +112,8 @@ def callUpdateClass():
     dataRules = updateClass.prepareRules(omeka, rules)
     if not dataRules:#some rules has not been found
         return
-    totalResults, pagesQ = utils.getQuantities(omeka, itemSetId=dataRules['itemSetFrom'], resourceClassId=dataRules['classFrom']['o:id'])
     print(f"#### UPDATE CLASSES ####")
     print(f"""
-    nombre d'item total: {totalResults}
     item set from\n\tlabel: {rules['itemSetFrom']} \n\tid: {dataRules['itemSetFrom']}
     template to\n\tlabel: {rules['templateTo']} \n\tid: {dataRules['templateTo']['o:id']}
     class from\n\tterm: {dataRules['classFrom']['o:term']} \n\tid: {dataRules['classFrom']['o:id']}
@@ -125,14 +124,17 @@ def callUpdateClass():
     search = True
     while search:
         pageNum+=1
-        print(f"\npage: {pageNum}/{pagesQ}")
         #APIitems = utils.getItemsinPage(omeka, pageNum, itemSetId=dataRules['itemSetFrom'], resourceClassId=dataRules['classFrom']['o:id'])
         APIitems = omeka.search_items('', 
                                       item_set_id = dataRules['itemSetFrom'], 
                                       resource_class_id = dataRules['classFrom']['o:id'], 
                                       page=pageNum)
+        if pageNum == 1:#on first loop only
+            totalResults, pagesQ = utils.getQuantities(APIitems)
+            print(f"nombre d'item total: {totalResults}")
         search = len(APIitems['results'])#0 quand il n'y a plus rien 
         if search:
+            print(f"\npage: {pageNum}/{pagesQ}")
             processed, not_proc, error = updateClass.updateClass(omeka, APIitems, dataRules)
             processedItemsId += processed
             not_procItemsId += not_proc
@@ -141,22 +143,46 @@ def callUpdateClass():
             print(f"no more items")
     utils.printMutation("CLASS UPDATE", processedItemsId, not_procItemsId, errorItemsId)
 
+
 def callMoveDataProp():
-    itemSetId = omeka.get_itemset_id('CCI itemSet')
+    rules = {
+        'itemSetFrom': 'CCI itemSet',
+        'propFrom': 'dcterms:identifier',
+        'propTo': 'crm:P48_has_preferred_identifier', 
+        'delFrom': 'True',
+        }
+    itemSetID = omeka.get_itemset_id(rules['itemSetFrom'])
     pageNum=0
     processedItemsId, not_procItemsId, errorItemsId = [], [], []
     search = True
+    print(f"#### MOVING PROP VALUE ####")
+    print(f"""
+    item set from\n\tlabel: {rules['itemSetFrom']} \n\tid: {itemSetID}
+    property from\n\tlabel: {rules['propFrom']} \n\tid: 
+    property to\n\tterm: {rules['propTo']} \n\tid: 
+    delete source prop : {rules['delFrom']}
+    """)
     while search:
         pageNum+=1
-        APIitems = utils.getItemsinPage(omeka, pageNum, itemSetId=itemSetId)
+        # APIitems = utils.getItemsinPage(omeka, pageNum, itemSetId=itemSetId)
+        APIitems = omeka.filter_items_by_property(
+            filter_property=rules['propFrom'], 
+            filter_type='ex', 
+            item_set_id = itemSetID, 
+            page=pageNum)
+        if pageNum == 1:#on first loop only
+            totalResults, pagesQ = utils.getQuantities(APIitems)
+            print(f"nombre d'item total: {totalResults}")
         search = len(APIitems['results'])#0 quand il n'y a plus rien 
         if search:
-            processed, not_proc, error = moveDataProp(omeka, APIitems, "dcterms:type", propTo = 'crm:P2_has_type', delFrom = True)
+            print(f"\npage: {pageNum}/{pagesQ}")
+            processed, not_proc, error = moveDataProp(omeka, APIitems, rules)
             processedItemsId += processed
             not_procItemsId += not_proc
             errorItemsId += error
     utils.printMutation("MOVED DATA PROP", processedItemsId, not_procItemsId, errorItemsId)
 
 # listClasses()
-callUpdateClass()
+# callUpdateClass()
 # callCreateEvents()
+callMoveDataProp()

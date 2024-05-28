@@ -17,15 +17,15 @@ def moveDataPropOfitem(omeka, item, propFrom, propTo, propTo_id, delFrom):
     return new_item
 
 
-def moveDataProp(omeka, items, propFrom, propTo, delFrom = False):
+def moveDataProp(omeka, items, rules):
     """
     propFrom and propTo are string like  'crm:P5_consists_of' and 'crm:P45_consists_of'
     """
-    propTo_id = omeka.get_property_id(propTo)
+    propTo_id = omeka.get_property_id(rules['propTo'])
     processed, not_proc, error = [], [], []
     for origItem in items['results']:
         print('processing item id n°',origItem['o:id'])
-        new_item = moveDataPropOfitem(omeka, origItem, propFrom, propTo, propTo_id, delFrom)
+        new_item = moveDataPropOfitem(omeka, origItem, rules['propFrom'], rules['propTo'], propTo_id, rules['delFrom'])
         processed.append(origItem['o:id']) if new_item else error.append(origItem['o:id']) 
         updated_item = omeka.update_resource(new_item, 'items')
         assert origItem['o:id'] == updated_item['o:id']            
