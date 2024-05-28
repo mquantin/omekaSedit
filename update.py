@@ -9,7 +9,7 @@ import utils
 from moveDataProp import moveDataProp
 import updateClass
 from updateThumbnail import updateThumbnail
-from createEvents import createEvents
+import createEvents
 
 
 
@@ -47,6 +47,8 @@ def listClasses():
 
 def callCreateEvents():
     rules = {
+        'classFrom': 'crm:E22_Human-Made_Object',#optional, filters the resources, value may be None
+        'itemSetFrom': 'CCI itemSet',#optional, filters the resources, value may be None
         'triggerProp': 'crm:P32_used_general_technique',
         'targetProp': 'crm:P32_used_general_technique', 
         'targetItemClass': 'crm:E12_Production',
@@ -57,6 +59,8 @@ def callCreateEvents():
         'targetItemSet': 'CCI itemSet'
         }
     # rules = {
+    #     'classFrom': 'crm:E22_Human-Made_Object'
+    #     'itemSetFrom': 'CCI itemSet',
     #     'triggerProp': 'dcterms:date',
     #     'targetProp': 'crm:P4_has_time-span', 
     #     'targetItemClass': 'crm:E65_Creation',
@@ -67,6 +71,8 @@ def callCreateEvents():
     #     'targetItemSet': 'CCI itemSet'
     #     }
     # rules = {
+    #     'classFrom': 'crm:E22_Human-Made_Object'
+    #     'itemSetFrom': 'CCI itemSet',
     #     'triggerProp': 'dcterms:creator',
     #     'targetProp': 'crm:P14_carried_out_by', 
     #     'targetItemClass': 'crm:E65_Creation',
@@ -76,15 +82,21 @@ def callCreateEvents():
     #     'targetLabel': 'creation',
     #     'targetItemSet': 'CCI itemSet'
     #     }
+    dataRules = createEvents.prepareRules(omeka, rules)
+    if not dataRules:#some rules has not been found
+        return
     pageNum=0
     processedItemsId, not_procItemsId, errorItemsId = [], [], []
     search = True
     while search:
         pageNum+=1
-        APIitems = utils.getItemsinPage(omeka, pageNum, itemSetName='CCI itemSet', resourceClassTerm='crm:E22_Human-Made_Object')
+        APIitems = omeka.search_items('', 
+                                      item_set_id = dataRules['itemSetFrom'], 
+                                      resource_class_id = dataRules['classFrom']['o:id'], 
+                                      page=pageNum)
         search = len(APIitems['results'])#0 quand il n'y a plus rien 
         if search:
-            processed, not_proc, error = createEvents(omeka, APIitems, rules)
+            processed, not_proc, error = createEvents.createEvents(omeka, APIitems, rules)
             processedItemsId += processed
             not_procItemsId += not_proc
             errorItemsId += error
@@ -98,16 +110,16 @@ def callUpdateClass():
     #     'classFrom': 'crm:E36_Visual_Item',
     #     'classTo': 'crm:E22_Human-Made_Object', 
     #     'templateTo': 'mobilier',
-    #     'templateFrom': None,#optional, value may be False
-    #     'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300191086", label="Visual Works (AAT)"),#optional, value may be False
+    #     'templateFrom': None,#optional, value may be None
+    #     'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300191086", label="Visual Works (AAT)"),#optional, value may be None
     #     }
     rules = {
         'itemSetFrom': 'CCI itemSet',
         'classFrom': 'crm:E31_Document',
         'classTo': 'crm:E22_Human-Made_Object', 
         'templateTo': 'mobilier',
-        'templateFrom': False,#optional, value may be False
-        'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"),#optional, value may be False
+        'templateFrom': None,#optional, value may be None
+        'E55TypeValue': E55type(uri="https://vocab.getty.edu/aat/300026685", label="Documents (AAT)"),#optional, value may be None
         }
     dataRules = updateClass.prepareRules(omeka, rules)
     if not dataRules:#some rules has not been found

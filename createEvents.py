@@ -71,6 +71,22 @@ def searchMatch(omeka, startItem, targetItemClassId, rules):
     return "NA"# when this line is reached, no match has been been found, but no error is to handle, a new event item should be created
 
 
+def prepareRules(omeka, rules):
+    data = {}
+    data['itemSetFrom'] = omeka.get_itemset_id(rules['itemSetFrom']) if rules['itemSetFrom'] else None
+    data['classFrom'] = omeka.get_resource_by_term(rules['classFrom'], resource_type='resource_classes')
+    targetPropId = omeka.get_property_id(rules['targetProp'])
+    targetItemClassId = omeka.get_class_id(rules['targetItemClass'])
+    targetTemplateId = omeka.get_template_id(rules['targetTemplate'])
+    itemSetId = omeka.get_itemset_id(rules['targetItemSet'])
+    linkPropId = omeka.get_property_id(rules['linkProp'])
+    data['targetLabel'] = rules['targetLabel']
+    for searchedThing, userInput in rules.items():
+        if not data[searchedThing] and userInput:
+           print(f'ERROR, missing omeka resource, no {searchedThing} found')
+           return None
+    return data
+
 def createEvents(omeka, items, rules):
     """
     WARNING: items have to be smartly filtered to avoid side effects!

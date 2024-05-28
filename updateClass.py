@@ -7,10 +7,10 @@ import utils
 
 def prepareRules(omeka, rules):
     data = {}
+    data['itemSetFrom'] = omeka.get_itemset_id(rules['itemSetFrom']) if rules['itemSetFrom'] else None
     data['classFrom'] = omeka.get_resource_by_term(rules['classFrom'], resource_type='resource_classes')
     data['classTo'] = omeka.get_resource_by_term(rules['classTo'], resource_type='resource_classes')
     data['templateTo'] = omeka.get_template_by_label(rules['templateTo'])
-    data['itemSetFrom'] = omeka.get_itemset_id(rules['itemSetFrom']) if rules['itemSetFrom'] else None
     data['templateFrom'] = omeka.get_template_by_label(rules['templateFrom']) if rules['templateFrom'] else None
     data['E55TypeProp'] = omeka.get_property_id('crm:P2_has_type')
     data['E55TypeValue'] = rules['E55TypeValue']
