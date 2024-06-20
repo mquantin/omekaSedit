@@ -94,11 +94,12 @@ def prepareRules(omeka, rules):
     data['targetProp'] = omeka.get_resource_by_term(rules['targetProp'], resource_type='properties')
     # data['targetItemClass'] = omeka.get_class_id(rules['targetItemClass'])
     data['targetItemClass'] = omeka.get_resource_by_term(rules['targetItemClass'], resource_type='resource_classes')
-    data['targetTemplate'] = omeka.get_template_id(rules['targetTemplate'])
+    data['targetTemplate'] = omeka.get_template_id(rules['targetTemplate']) if rules['targetTemplate'] else None
     data['targetItemSet'] = omeka.get_itemset_id(rules['targetItemSet'])
     data['linkProp'] =  omeka.get_resource_by_term(rules['linkProp'], resource_type='properties')
     data['targetLabel'] = rules['targetLabel']
     data['action'] = rules['action']
+    data['team'] = rules['team']
     for searchedThing, userInput in rules.items():
         if not data[searchedThing] and userInput:
            print(f'ERROR, missing omeka resource, no {searchedThing} found')
@@ -123,17 +124,6 @@ def createEvents(omeka, items, dataRules):
         move the value content of triggerProp to targetProp in that targetItem
         create a linkProperty in that targetItem, pointing to our startItem
 
-    rules is a dict as follow (example):
-        {
-        'triggerProp': 'dcterms:date',
-        'targetProp': 'crm:P4_has_time-span', 
-        'targetItemClass': 'crm:E65_Creation',
-        'linkProp': 'crms:p1_has_conceived',
-        'action': 'hide' or 'delete' or '',
-        'targetTemplate': 'conception',
-        'targetLabel': 'creation',
-        'targetItemSet': 'CCI itemSet'
-        }
     """
     processed = []
     not_proc = []
@@ -164,9 +154,14 @@ def createEvents(omeka, items, dataRules):
                         'value': startItem['o:id'],
                         'type': 'resource:item',
                     },
-                ]
+                ],
             }
-            new_item = omeka.prepare_item_payload_using_template(terms, dataRules['targetTemplate'])#a new item
+            if dataRules['team']:
+                terms['team'] = dataRules['team']
+            if dataRules['targetTemplate']:
+                new_item = omeka.prepare_item_payload_using_template(terms, dataRules['targetTemplate'])#a new item with template compliance check
+            else:
+                new_item = omeka.prepare_item_payload(terms)#a new item
         else: #edit existing event 
             print('FOUND item n°', found['o:id'])
             new_item = deepcopy(found)# edit existing item matching the criterias of serachMatch

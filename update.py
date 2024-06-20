@@ -46,18 +46,19 @@ def listClasses():
 
 
 def callCreateEvents():
-    # rules = {
-    #     'classFrom': 'crm:E22_Human-Made_Object',#optional, filters the resources, value may be None
-    #     'itemSetFrom': 'CCI itemSet',#optional, filters the resources, value may be None
-    #     'triggerProp': 'crm:P32_used_general_technique',
-    #     'targetProp': 'crm:P32_used_general_technique', 
-    #     'targetItemClass': 'crm:E12_Production',
-    #     'linkProp': 'crm:P108_has_produced',
-    #     'action': 'hide',
-    #     'targetTemplate': 'production',
-    #     'targetLabel': 'production',
-    #     'targetItemSet': 'CCI itemSet'
-    #     }
+    rules = {
+        'classFrom': 'crm:E22_Human-Made_Object',#optional, filters the resources, value may be None
+        'itemSetFrom': 'CCI itemSet',#optional, filters the resources, value may be None
+        'triggerProp': 'crm:P32_used_general_technique',
+        'targetProp': 'crm:P32_used_general_technique', 
+        'targetItemClass': 'crm:E12_Production',
+        'linkProp': 'crm:P108_has_produced',
+        'action': 'hide',
+        'targetTemplate': None,#'production',
+        'targetLabel': 'production',
+        'targetItemSet': 'CCI itemSet',
+        'team': [1,]
+        }
     # rules = {
     #     'classFrom': 'crm:E22_Human-Made_Object',
     #     'itemSetFrom': 'CCI itemSet',
@@ -65,23 +66,25 @@ def callCreateEvents():
     #     'targetProp': 'crm:P4_has_time-span', 
     #     'targetItemClass': 'crm:E65_Creation',
     #     'linkProp': 'crms:P1_has_conceived',
-    #     'action': 'hide',
-    #     'targetTemplate': 'conception',
+    #     'action': 'hide',#'delete',
+    #     'targetTemplate': None,#'conception',
     #     'targetLabel': 'creation',
-    #     'targetItemSet': 'CCI itemSet'
+    #     'targetItemSet': 'CCI itemSet',
+    #     'team': [1,]
     #     }
-    rules = {
-        'classFrom': 'crm:E22_Human-Made_Object',
-        'itemSetFrom': 'CCI itemSet',
-        'triggerProp': 'dcterms:creator',
-        'targetProp': 'crm:P14_carried_out_by', 
-        'targetItemClass': 'crm:E65_Creation',
-        'linkProp': 'crms:P1_has_conceived',
-        'action': 'hide',
-        'targetTemplate': 'conception',
-        'targetLabel': 'creation',
-        'targetItemSet': 'CCI itemSet'
-        }
+    # rules = {
+    #     'classFrom': 'crm:E22_Human-Made_Object',
+    #     'itemSetFrom': 'CCI itemSet',
+    #     'triggerProp': 'dcterms:creator',
+    #     'targetProp': 'crm:P14_carried_out_by', 
+    #     'targetItemClass': 'crm:E65_Creation',
+    #     'linkProp': 'crms:P1_has_conceived',
+    #     'action': 'hide',
+    #     'targetTemplate': None,#'conception',
+    #     'targetLabel': 'creation',
+    #     'targetItemSet': 'CCI itemSet',
+    #     'team': [1,]
+    #     }
     dataRules = createEvents.prepareRules(omeka, rules)
     if not dataRules:#some rules has not been found
         return
@@ -163,6 +166,18 @@ def callMoveDataProp():
         'propTo': 'crm:P48_has_preferred_identifier', 
         'delFrom': 'True',
         }
+    # rules = {
+    #     'itemSetFrom': 'CCI itemSet',
+    #     'propFrom': 'dcterms:type',
+    #     'propTo': 'crm:P2_has_type', 
+    #     'delFrom': 'True',
+    #     }
+    # rules = {
+    #     'itemSetFrom': 'CCI itemSet',
+    #     'propFrom': 'crm:P5_consists_of',
+    #     'propTo': 'crm:P45_consists_of', 
+    #     'delFrom': 'True',
+    #     }
     itemSetID = omeka.get_itemset_id(rules['itemSetFrom'])
     pageNum=0
     processedItemsId, not_procItemsId, errorItemsId = [], [], []
